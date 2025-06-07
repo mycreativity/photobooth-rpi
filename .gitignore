@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS-specific
+.DS_Store
+
+# IDE / Editor settings
+.vscode/
+
+# Pygame / runtime artifacts
+*.log
+*.tmp
+*.bak
+
+# Cache or saved images
+photos/
