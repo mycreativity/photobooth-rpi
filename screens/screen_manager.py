@@ -2,10 +2,10 @@ from ui.shapes import draw_rounded_rect_aa
 
 
 class ScreenManager:
-    def __init__(self, screen, initial_screen_cls, background):
+    def __init__(self, screen, initial_screen_cls, background, *args, **kwargs):
         self.screen = screen
         self.background = background
-        self.current_screen = initial_screen_cls(screen, background)
+        self.current_screen = initial_screen_cls(screen, background, *args, **kwargs)
 
     def switch_to(self, screen_class, *args, **kwargs):
         self.current_screen = screen_class(self.screen, *args, **kwargs)

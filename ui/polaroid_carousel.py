@@ -30,7 +30,7 @@ class PolaroidCarousel:
         self.polaroids = [self._make_polaroid(path) for path in self.image_paths]
 
     def _make_polaroid(self, path):
-        img = pygame.image.load(path).convert_alpha()
+        img = pygame.image.load(path).convert()
         # Initial dummy position (will be updated dynamically)
         return Polaroid(x=0, y=0, image_surface=img)
 
@@ -40,30 +40,35 @@ class PolaroidCarousel:
     def draw(self, surface):
         for i, polaroid in enumerate(self.polaroids):
             theta = self.angle + self.static_offsets[i]
+            sin_theta = math.sin(theta)
+            cos_theta = math.cos(theta)
 
-            # Virtual 3D orbit calculation
-            x = self.center[0] + math.cos(theta) * self.radius
-            y = self.center[1] + math.sin(theta) * self.radius * 0.7
+            # Position
+            x = self.center[0] + cos_theta * self.radius
+            y = self.center[1] + sin_theta * self.radius * 0.7
 
-            depth = (1 - math.sin(theta))  # back = 2, front = 0
+            # Depth & transform properties
+            depth = 1 - sin_theta
             scale = self.front_scale + (self.back_scale - self.front_scale) * depth * 0.5
-            tilt = int(10 * math.cos(theta))
+            tilt_angle = int(10 * cos_theta)
 
-            # ✅ Ensure content is drawn
+            # Precompute scaled sizes
+            photo_size = (int(280 * scale), int(320 * scale))
+            shadow_size = (int(320 * scale), int(360 * scale))
+
+            # Ensure rendered content
             polaroid.render()
 
-            # Scale and rotate internal surfaces
-            scaled_surface = pygame.transform.smoothscale(polaroid.surface, (int(280 * scale), int(320 * scale)))
-            rotated_surface = pygame.transform.rotate(scaled_surface, tilt)
+            # Scale and rotate both surfaces
+            rotated_surface = pygame.transform.rotate(
+                pygame.transform.smoothscale(polaroid.surface, photo_size), tilt_angle
+            )
+            rotated_shadow = pygame.transform.rotate(
+                pygame.transform.smoothscale(polaroid.shadow_surface, shadow_size), tilt_angle
+            )
 
-            # Likewise scale and rotate shadow
-            scaled_shadow = pygame.transform.smoothscale(polaroid.shadow_surface, (int(320 * scale), int(360 * scale)))
-            rotated_shadow = pygame.transform.rotate(scaled_shadow, tilt)
+            # Compute rects and blit
+            center_pos = (int(x), int(y))
+            surface.blit(rotated_shadow, rotated_shadow.get_rect(center=center_pos))
+            surface.blit(rotated_surface, rotated_surface.get_rect(center=center_pos))
 
-            # Draw shadow
-            shadow_rect = rotated_shadow.get_rect(center=(int(x), int(y)))
-            surface.blit(rotated_shadow, shadow_rect.topleft)
-
-            # Draw polaroid
-            photo_rect = rotated_surface.get_rect(center=(int(x), int(y)))
-            surface.blit(rotated_surface, photo_rect.topleft)

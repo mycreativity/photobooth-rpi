@@ -71,20 +71,36 @@ class RetroButton:
     def is_clicked(self, event):
         return event.type == pygame.MOUSEBUTTONDOWN and self.is_hovered(event.pos)
 
-import pygame
 
 class CircularRetroButton:
-    def __init__(self, center, diameter, icon_surface, base_color, shadow_color, icon_scale=0.6):
+    def __init__(
+        self,
+        center,
+        diameter,
+        icon_surface,
+        base_color,
+        shadow_color,
+        icon_scale=0.6,
+        label_text=None,
+        label_font=None,
+        label_color=(60, 40, 20),
+        label_margin=10
+    ):
         """
-        A circular retro-style button with a drop shadow and centered icon.
+        A circular retro-style button with a drop shadow and centered icon,
+        optionally with a text label underneath.
 
         Args:
-            center: (x, y) position of the button center
-            diameter: Diameter of the circle
-            icon_surface: Pygame Surface of the icon
-            base_color: Fill color of the button
-            shadow_color: Shadow color (drawn offset down)
-            icon_scale: Percentage of diameter to scale icon (default 60%)
+            center: (x, y) center of the button
+            diameter: Diameter of the circular button
+            icon_surface: Pygame Surface for the icon (can be None)
+            base_color: Button face color
+            shadow_color: Drop shadow color
+            icon_scale: Icon size as fraction of diameter
+            label_text: Optional string label below the button
+            label_font: Pygame Font object for label
+            label_color: Text color
+            label_margin: Pixels between button and label
         """
         self.diameter = diameter
         self.radius = diameter // 2
@@ -94,25 +110,47 @@ class CircularRetroButton:
         self.icon = icon_surface
         self.icon_scale = icon_scale
 
-        # Build circular rect for hit detection
+        # Label config
+        self.label_text = label_text
+        self.label_font = label_font
+        self.label_color = label_color
+        self.label_margin = label_margin
+
         x, y = center
         self.rect = pygame.Rect(x - self.radius, y - self.radius, diameter, diameter)
 
     def draw(self, surface):
         shadow_offset = 4
+        scale = 4
+        hr_size = self.diameter * scale
+        shadow_height = hr_size + shadow_offset * scale
 
-        # Shadow
-        pygame.draw.circle(surface, self.shadow_color, (self.center[0], self.center[1] + shadow_offset), self.radius)
+        # Supersampled shadow + base
+        hr_shadow_surf = pygame.Surface((hr_size, int(shadow_height)), pygame.SRCALPHA)
+        hr_base_surf = pygame.Surface((hr_size, int(shadow_height)), pygame.SRCALPHA)
 
-        # Base
-        pygame.draw.circle(surface, self.base_color, self.center, self.radius)
+        pygame.draw.circle(hr_shadow_surf, self.shadow_color, (hr_size // 2, hr_size // 2 + shadow_offset * scale), hr_size // 2)
+        pygame.draw.circle(hr_base_surf, self.base_color, (hr_size // 2, hr_size // 2), hr_size // 2)
 
-        # Icon
+        shadow_surf = pygame.transform.smoothscale(hr_shadow_surf, (self.diameter, self.diameter))
+        base_surf = pygame.transform.smoothscale(hr_base_surf, (self.diameter, self.diameter))
+
+        top_left = (self.center[0] - self.radius, self.center[1] - self.radius)
+        surface.blit(shadow_surf, top_left)
+        surface.blit(base_surf, top_left)
+
+        # Draw icon
         if self.icon:
             target_size = int(self.diameter * self.icon_scale)
             icon = pygame.transform.smoothscale(self.icon, (target_size, target_size))
             icon_rect = icon.get_rect(center=self.center)
             surface.blit(icon, icon_rect)
+
+        # Draw label below
+        if self.label_text and self.label_font:
+            label_surf = self.label_font.render(self.label_text, True, self.label_color)
+            label_rect = label_surf.get_rect(midtop=(self.center[0], self.center[1] + self.radius + self.label_margin))
+            surface.blit(label_surf, label_rect)
 
     def is_hovered(self, mouse_pos):
         dx = mouse_pos[0] - self.center[0]

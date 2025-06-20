@@ -1,5 +1,7 @@
 import pygame
 
+import config
+
 class FPSCounter:
     def __init__(self, screen, font=None, color=(50, 50, 50), pos=(10, -30)):
         """
@@ -10,7 +12,7 @@ class FPSCounter:
         """
         self.screen = screen
         self.clock = pygame.time.Clock()
-        self.font = font or pygame.font.SysFont("Consolas", 18)
+        self.font = config.FONT_MONO
         self.color = color
         self.pos = pos
 

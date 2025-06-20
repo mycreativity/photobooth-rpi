@@ -1,8 +1,11 @@
+import datetime
+import os
 import time
 import cv2
 import numpy as np
 import pygame
 import pygame.camera
+import config
 from screens.base_screen import BaseScreen
 from screens.preview_screen import PreviewScreen
 
@@ -11,9 +14,19 @@ class CountdownScreen(BaseScreen):
         super().__init__(screen)
         self.count = 3
         self.timer = 1.0
-        self.font = pygame.font.Font("assets/fonts/Arimo-Bold.ttf", 120)
+        self.font = config.FONT_DISPLAY
         self.background = background
         self.shutter_sound = pygame.mixer.Sound("assets/sounds/shutter.wav")
+
+    def save_photo(self, surface):
+        # Format: photo_YYYYMMDD_HHMMSS.jpg
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"photo_{timestamp}.jpg"
+        path = os.path.join("photos", filename)
+
+        pygame.image.save(surface, path)
+        print(f"📸 Photo saved to {path}")
+        return path
 
 
     def handle_event(self, event, switch_screen):
@@ -56,6 +69,10 @@ class CountdownScreen(BaseScreen):
                     frame_rgb.tobytes(), frame_rgb.shape[1::-1], "RGB"
                 ).convert()
 
+                # Save the photo
+                self.save_photo(frame_surface)
+
+                # Switch to preview screen with the captured photo
                 switch_screen(PreviewScreen, self.background, frame_surface)
 
     def draw(self):
