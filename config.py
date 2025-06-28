@@ -1,19 +1,28 @@
-import pygame
+from kivy.core.text import LabelBase
 
 
 VERSION = "1.0"
 PHOTO_FOLDER = "photos"
 FPS = 60
 
-FONT_DISPLAY = pygame.font.Font("assets/fonts/Pacifico-Regular.ttf", 60)
-FONT_HEADING = pygame.font.Font("assets/fonts/Pacifico-Regular.ttf", 40)
-FONT_TEXT = pygame.font.Font("assets/fonts/Poppins-Regular.ttf", 28)
-FONT_BUTTON = pygame.font.Font("assets/fonts/Poppins-ExtraBold.ttf", 50)
-FONT_BUTTON_LARGE = pygame.font.Font("assets/fonts/Poppins-ExtraBold.ttf", 50)
-FONT_LABEL = pygame.font.Font("assets/fonts/Poppins-Regular.ttf", 32)
-FONT_MONO = pygame.font.Font("assets/fonts/SpaceMono-Regular.ttf", 14)
+LabelBase.register(name='DISPLAY', fn_regular='assets/fonts/Pacifico-Regular.ttf')
+LabelBase.register(name='HEADING', fn_regular='assets/fonts/Pacifico-Regular.ttf')
+LabelBase.register(name='TEXT', fn_regular='assets/fonts/Poppins-Regular.ttf')
+LabelBase.register(name='BUTTON', fn_regular='assets/fonts/Poppins-ExtraBold.ttf')
+LabelBase.register(name='BUTTON_LARGE', fn_regular='assets/fonts/Poppins-ExtraBold.ttf')
+LabelBase.register(name='LABEL', fn_regular='assets/fonts/Poppins-Regular.ttf')
+LabelBase.register(name='MONO', fn_regular='assets/fonts/SpaceMono-Regular.ttf')
 
-PRIMARY_COLOR = (226, 85, 39)
-PRIMARY_COLOR_DARK = (180, 60, 25)
-SECONDARY_COLOR = (145, 174, 194)
+FONT_DISPLAY = 'DISPLAY'
+FONT_HEADING = 'HEADING'
+FONT_TEXT = 'TEXT'
+FONT_BUTTON = 'BUTTON'
+FONT_BUTTON_LARGE = 'BUTTON_LARGE'
+FONT_LABEL = 'LABEL'
+FONT_MONO = 'MONO'
+
+PRIMARY_COLOR = '#d1551dff'
+PRIMARY_COLOR_DARK = '#a43008ff'
+SECONDARY_COLOR = '#643a1eff'
 SECONDARY_COLOR_DARK = (100, 130, 150)
+SURFACE_COLOR = '#eedabaff'

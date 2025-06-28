@@ -16,3 +16,5 @@ __pycache__/
 
 # Cache or saved images
 photos/
+
+.vscode

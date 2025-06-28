@@ -1,63 +1,52 @@
-import pygame
-import numpy as np
-from scipy.ndimage import gaussian_filter
-import config
-from ui.button import RetroButton
-from ui.shapes import create_blurred_shadow, draw_rounded_rect_aa
-from ui.text import UIText
+from kivy.uix.boxlayout import BoxLayout
+from kivy.graphics import Color, RoundedRectangle, Rectangle
+from kivy.uix.image import Image
+from kivy.core.image import Image as CoreImage
+from kivy.utils import get_color_from_hex
+import os
 
-class UICard:
-    def __init__(self, x, y, width, height, color=(240, 224, 191), radius=20,
-                 shadow_offset=(8, 8), blur_radius=10, shadow_color=(0, 0, 0, 180)):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.color = color
-        self.radius = radius
-        self.shadow_offset = shadow_offset
-        self.blur_radius = blur_radius
-        self.shadow_color = shadow_color
+class UICard(BoxLayout):
+    
 
-        self.surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        self.shadow_surface, self.shadow_padding = create_blurred_shadow(
-            (self.rect.width, self.rect.height),
-            radius=self.radius,
-            blur_radius=self.blur_radius,
-            color=self.shadow_color
-        )
+    def __init__(self, size=(500, 300), padding=20, orientation='vertical', color_hex='#eedabaff', **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = orientation
+        self.padding = padding
+        self.size_hint = (None, None)  # Required to see size-based rendering
+        self.size = size
+        self.bg_color = get_color_from_hex(color_hex) 
 
-    def handle_event(self, event):
-        """Translate global event coordinates to card-local surface."""
-        if event.type not in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
-            return None
+        # Load shadow texture
+        
+        with self.canvas.before:
+            # Shadow image
+            self.shadow_image = Image(
+                        source='assets/images/shadow.png',
+                        allow_stretch=True,
+                        keep_ratio=False,
+                        size_hint=(1, 1),
+                        pos=(0, 0)
+                    )
+            
+            # Background card
+            self.bg_color_instr = Color(*self.bg_color)
+            self.bg_rect = RoundedRectangle(radius=[20], size=self.size)
 
-        # Translate global mouse position to surface-relative
-        local_pos = (
-            event.pos[0] - self.rect.x,
-            event.pos[1] - self.rect.y
-        )
-        return local_pos
+        # React to layout changes
+        # self.bind(pos=self.update_canvas, size=self.update_canvas, bg_color=self.update_canvas)
+        self.update_canvas()
 
-    def draw_content(self, surface: pygame.Surface):
-        """
-        Override this method to draw widgets (e.g., buttons) onto the card.
-        """
-        pass
+    def update_canvas(self, *args):
+        shadow_padding = 87
+        sizing_factor_x = self.width/500
+        sizing_factor_y = self.height/500
+        shadow_padding_x = shadow_padding * sizing_factor_x
+        shadow_padding_y = shadow_padding * sizing_factor_y
+        # self.shadow_image.pos = (self.x - shadow_padding, self.y - shadow_padding)
+        # self.shadow_image.size = (self.width + 2 * shadow_padding, self.height + 2 * shadow_padding)
+        self.shadow_image.pos = (self.x - shadow_padding_x, self.y - shadow_padding_y)
+        self.shadow_image.size = (self.width + 2 * shadow_padding_x, self.height + 2 * shadow_padding_y)
 
-    def draw(self, target_surface: pygame.Surface):
-        # Step 1: Clear the card surface
-        self.surface.fill((0, 0, 0, 0))
-
-        # Step 2: Draw rounded background
-        draw_rounded_rect_aa(self.surface, self.surface.get_rect(), self.color, radius=self.radius)
-
-        # Step 3: Draw custom content
-        self.draw_content(self.surface)
-
-        # Step 4: Draw shadow and card onto target
-        shadow_pos = (
-            self.rect.x - self.shadow_padding + self.shadow_offset[0],
-            self.rect.y - self.shadow_padding + self.shadow_offset[1]
-        )
-        target_surface.blit(self.shadow_surface, shadow_pos)
-        target_surface.blit(self.surface, self.rect.topleft)
-
-
+        self.bg_color_instr.rgba = self.bg_color
+        self.bg_rect.pos = self.pos
+        self.bg_rect.size = self.size
