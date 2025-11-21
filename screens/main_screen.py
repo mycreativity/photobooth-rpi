@@ -25,32 +25,33 @@ class MainScreen(ScreenInterface):
         self.background_image.set_position((0, 0), self.width, self.height, self.aspect_ratio)
         
         # --- INSTANTIE VAN TEXT LABEL ---
-        self.fps_label = GLTextLabel(initial_text="Starten...", font=FONT_DISPLAY, color=PRIMARY_COLOR) 
+        self.fps_label = GLTextLabel(initial_text="Starten...", font=FONT_MONO, color=(0, 0, 0))
         self.fps_label.set_position((10, 10), self.width, self.height, self.aspect_ratio)
 
-        # --- INSTANTIE VAN POLAROID ---
-        self.polaroid = GLPolaroid(
-            photo_path="assets/images/party-pic.png", 
-            frame_path="assets/images/polaroid_texture.png"
-        )
-        self.polaroid_pos_x = (width // 2) - (self.polaroid.frame.image_rect.width // 2) # Centreer de X
-        self.polaroid_pos_y = (height // 2) - (self.polaroid.frame.image_rect.height // 2) # Centreer de Y
-        self.polaroid.set_position(
-            (self.polaroid_pos_x, self.polaroid_pos_y), 
-            self.width, 
-            self.height, 
-            self.aspect_ratio
-        )
-
-        # --- POLAROID ANIMATIE INSTELLINGEN ---
+        # --- INSTANTIE VAN POLAROIDS ---
         self.orbit_angle = 0.0          # Start hoek in graden
-        self.orbit_speed = 30.0         # Baansnelheid (Graden/seconde)
-
+        self.orbit_speed = 20.0         # Baansnelheid (Graden/seconde)
+        NUM_POLAROIDS = 16
+        self.polaroids = []
+        self.angle_offset_step = 360.0 / NUM_POLAROIDS # De hoek tussen elke polaroid (360 graden / aantal)
         # Rotatiecentrum (C_x, C_y) - 300 pixels onder het midden van het scherm
         self.center_x = self.width // 2
         self.center_y = self.height + 900 
-        self.orbit_radius = 1500         # Straal van de baan (R)
-        self.polaroid.set_rotation(angle=-5)  # Kleine draaiing voor effect
+        self.orbit_radius = 1400         # Straal van de baan (R)
+
+        for i in range(NUM_POLAROIDS):
+            polaroid = GLPolaroid(
+                photo_path="assets/images/party-pic.png", 
+                frame_path="assets/images/polaroid_texture.png"
+            )
+            # Voeg een unieke eigenschap toe om de hoekoffset op te slaan
+            polaroid.angle_offset = i * self.angle_offset_step
+            
+            # Stel de initiële positie in (nodig om de rect grootte te initialiseren)
+            polaroid.set_position((0, 0), self.width, self.height, self.aspect_ratio)
+            polaroid.set_rotation(angle=0) 
+            self.polaroids.append(polaroid)
+
 
         self.setup_opengl_2d()
 
@@ -87,33 +88,51 @@ class MainScreen(ScreenInterface):
         dt: Delta Time in seconden.
         """
         
-        # 1. Update de hoeken
+        # 1. Update de basis hoek die voor iedereen geldt
         self.orbit_angle += self.orbit_speed * dt
         self.orbit_angle %= 360 
         
-        # Converteer de hoek naar radialen voor math.cos/sin
-        rad = math.radians(self.orbit_angle) 
-        
-        new_center_x = self.center_x + self.orbit_radius * math.cos(rad)
-        new_center_y = self.center_y + self.orbit_radius * math.sin(rad)
-        
-        # 3. Vertaal het Centrum naar de Top-Left Hoek (die nodig is voor set_position)
-        frame_w = self.polaroid.frame.image_rect.width
-        frame_h = self.polaroid.frame.image_rect.height
-        
-        polaroid_top_left_x = int(new_center_x - (frame_w // 2))
-        polaroid_top_left_y = int(new_center_y - (frame_h // 2))
-        
-        # 4. Stel de positie en interne rotatie in
-        self.polaroid.set_position(
-            (polaroid_top_left_x, polaroid_top_left_y), 
-            self.width, 
-            self.height, 
-            self.aspect_ratio
-        )
-        
-        # 5. Gebruik angle om de hoek van de polaroid te bepalen
-        self.polaroid.set_rotation(angle=-self.orbit_angle-90)
+        # 2. Iteratie over alle polaroids
+        for polaroid in self.polaroids:
+            
+            # Bereken de actuele hoek voor deze specifieke polaroid
+            current_polaroid_angle = (self.orbit_angle + polaroid.angle_offset) % 360
+            
+            # --- POSITIE BEREKENING ---
+            rad = math.radians(current_polaroid_angle) 
+            
+            new_center_x = self.center_x + self.orbit_radius * math.cos(rad)
+            new_center_y = self.center_y + self.orbit_radius * math.sin(rad)
+            
+            # Vertaal Centrum naar Top-Left Hoek
+            frame_w = polaroid.frame.image_rect.width
+            frame_h = polaroid.frame.image_rect.height
+            
+            polaroid_top_left_x = int(new_center_x - (frame_w // 2))
+            polaroid_top_left_y = int(new_center_y - (frame_h // 2))
+            
+            # Stel de positie in
+            polaroid.set_position(
+                (polaroid_top_left_x, polaroid_top_left_y), 
+                self.width, 
+                self.height, 
+                self.aspect_ratio
+            )
+            
+            # --- ROTATIE BEREKENING (Bottom wijst naar Centrum) ---
+            
+            # De hoek van de P->C vector
+            vector_x = self.center_x - new_center_x
+            vector_y = self.center_y - new_center_y
+            
+            angle_rad = math.atan2(vector_y, vector_x)
+            target_angle_deg = math.degrees(angle_rad)
+            
+            # +90.0 offset zorgt ervoor dat de onderkant naar het centrum wijst
+            new_rotation = -target_angle_deg - 270.0
+            
+            polaroid.set_rotation(new_rotation)
+            # polaroid.set_rotation(angle=-self.orbit_angle-90)
 
     def update(self, dt, callback):
         # De logica om de tekst bij te werken blijft hier, maar roept de label-methode aan
@@ -138,7 +157,8 @@ class MainScreen(ScreenInterface):
         # A. Update de positie van de interne rect van de label
         # Dit is nodig omdat de helper functie de rect's afmetingen en positie nodig heeft
         self.background_image.draw()
-        self.polaroid.draw()
+        for polaroid in self.polaroids:
+            polaroid.draw()
         self.fps_label.draw()
         
         
@@ -155,5 +175,7 @@ class MainScreen(ScreenInterface):
         print("Exiting MainScreen.")
         # Ruim de label op
         self.background_image.cleanup()
-        self.polaroid.cleanup()
+        for polaroid in self.polaroids:
+            polaroid.cleanup()
         self.fps_label.cleanup()
+        

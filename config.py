@@ -11,7 +11,7 @@ FONT_DISPLAY = FontUtils.load_font('assets/fonts/Pacifico-Regular.ttf', 20)
 # LabelBase.register(name='BUTTON', fn_regular='assets/fonts/Poppins-ExtraBold.ttf')
 # LabelBase.register(name='BUTTON_LARGE', fn_regular='assets/fonts/Poppins-ExtraBold.ttf')
 # LabelBase.register(name='LABEL', fn_regular='assets/fonts/Poppins-Regular.ttf')
-# LabelBase.register(name='MONO', fn_regular='assets/fonts/SpaceMono-Regular.ttf')
+FONT_MONO = FontUtils.load_font('assets/fonts/SpaceMono-Regular.ttf', 12)
 
 PRIMARY_COLOR = (209, 85, 29)
 PRIMARY_COLOR_DARK = (164, 48, 8)
