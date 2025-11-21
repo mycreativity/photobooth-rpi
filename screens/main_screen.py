@@ -41,6 +41,15 @@ class MainScreen(ScreenInterface):
             self.height, 
             self.aspect_ratio
         )
+
+        # --- POLAROID ANIMATIE INSTELLINGEN ---
+        self.orbit_angle = 0.0          # Start hoek in graden
+        self.orbit_speed = 30.0         # Baansnelheid (Graden/seconde)
+
+        # Rotatiecentrum (C_x, C_y) - 300 pixels onder het midden van het scherm
+        self.center_x = self.width // 2
+        self.center_y = self.height + 900 
+        self.orbit_radius = 1500         # Straal van de baan (R)
         self.polaroid.set_rotation(angle=-5)  # Kleine draaiing voor effect
 
         self.setup_opengl_2d()
@@ -72,12 +81,48 @@ class MainScreen(ScreenInterface):
         # ... (onveranderd)
         pass
 
+    def update_polaroid_position(self, dt):
+        """
+        Berekent de nieuwe positie op de excentrische baan en roteert de polaroid.
+        dt: Delta Time in seconden.
+        """
+        
+        # 1. Update de hoeken
+        self.orbit_angle += self.orbit_speed * dt
+        self.orbit_angle %= 360 
+        
+        # Converteer de hoek naar radialen voor math.cos/sin
+        rad = math.radians(self.orbit_angle) 
+        
+        new_center_x = self.center_x + self.orbit_radius * math.cos(rad)
+        new_center_y = self.center_y + self.orbit_radius * math.sin(rad)
+        
+        # 3. Vertaal het Centrum naar de Top-Left Hoek (die nodig is voor set_position)
+        frame_w = self.polaroid.frame.image_rect.width
+        frame_h = self.polaroid.frame.image_rect.height
+        
+        polaroid_top_left_x = int(new_center_x - (frame_w // 2))
+        polaroid_top_left_y = int(new_center_y - (frame_h // 2))
+        
+        # 4. Stel de positie en interne rotatie in
+        self.polaroid.set_position(
+            (polaroid_top_left_x, polaroid_top_left_y), 
+            self.width, 
+            self.height, 
+            self.aspect_ratio
+        )
+        
+        # 5. Gebruik angle om de hoek van de polaroid te bepalen
+        self.polaroid.set_rotation(angle=-self.orbit_angle-90)
+
     def update(self, dt, callback):
         # De logica om de tekst bij te werken blijft hier, maar roept de label-methode aan
         if dt > 0:
             fps = 1.0 / dt
             text = f"FPS: {fps:.2f}"
             self.fps_label.update_text(text)
+
+        self.update_polaroid_position(dt)
         pass
 
     def draw(self, target_surface):
