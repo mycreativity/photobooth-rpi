@@ -10,6 +10,7 @@ from config import *
 from ui.gl_image import GLImage
 from ui.gl_polaroid import GLPolaroid
 from ui.gl_text_label import GLTextLabel
+from utils.image_utils import ImageUtils
 from .screen_interface import ScreenInterface
 
 
@@ -19,10 +20,13 @@ class MainScreen(ScreenInterface):
         self.width = width
         self.height = height
         self.aspect_ratio = width / height
-        self.font_size = 40
 
         # --- INSTANTIE VAN BACKGROUND ---
         self.background_image = GLImage(image_path="assets/images/background.png", position=(0, 0)) 
+        self.background_image.image_surface = pygame.transform.smoothscale(
+            self.background_image.image_surface, 
+            (self.width, self.height)
+        ).convert_alpha()
         self.background_image.set_position((0, 0), self.width, self.height, self.aspect_ratio)
         
         # --- INSTANTIE VAN TEXT LABEL ---
