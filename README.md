@@ -1,1 +1,1 @@
-pip install pygame PyOpenGl PyOpenGL-accelerate
+pip install pygame PyOpenGl PyOpenGL-accelerate numpy scipy
