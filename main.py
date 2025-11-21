@@ -16,9 +16,10 @@ FPS = 60
 
 def init_gl(width, height):
     """Initializes the base OpenGL context."""
-    # Set the viewport to cover the entire window
-    glViewport(0, 0, width, height)
-    
+    # # Set the viewport to cover the entire window
+    # if (width == 1280 and height == 800):
+    #     glViewport(0, 0, width, height)
+    print (f"Initializing OpenGL viewport to {width}x{height}...")
     # Set the Projection and Modelview modes
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()

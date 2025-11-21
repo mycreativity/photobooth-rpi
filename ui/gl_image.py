@@ -2,7 +2,6 @@ import pygame
 import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
-# Merk op: Ik ga ervan uit dat GLUtils beschikbaar is, zoals in je voorbeeld.
 from utils.gl_utils import GLUtils
 
 class GLImage:
@@ -48,6 +47,25 @@ class GLImage:
             self.image_rect = None
             return False
 
+    # --- NIEUWE METHODE ---
+    def resize(self, new_width, new_height):
+        """
+        Schaalt de afbeelding naar de opgegeven breedte en hoogte 
+        en update direct de GPU textuur.
+        """
+        if not self.image_surface:
+            return
+
+        # Gebruik smoothscale voor betere kwaliteit, of scale voor snelheid
+        self.image_surface = pygame.transform.smoothscale(
+            self.image_surface, 
+            (int(new_width), int(new_height))
+        )
+
+        # BELANGRIJK: De textuur op de videokaart moet nu ververst worden
+        # met de nieuwe pixeldata en afmetingen.
+        self.update_texture()
+    # ----------------------
 
     def update_texture(self):
         """Laadt de Pygame Surface naar de GPU-textuur (moet na load_image())."""
@@ -63,19 +81,18 @@ class GLImage:
         try:
             # Vraag de maximale ondersteunde anisotropie op
             max_anisotropy = glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT)
-            
-            # Pas de maximale anisotropie toe (dit is de hoogste kwaliteitsinstelling)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy)
-            # print(f"Applied Anisotropy: {max_anisotropy:.1f}") # Debugging
             
-        except NameError:
-            # Extensie is niet beschikbaar, val terug op GL_LINEAR (wat je al deed)
+        except (NameError, OpenGL.error.GLError):
+            # Extensie is niet beschikbaar, val terug op GL_LINEAR
             pass
         
         # Gebruik de Pygame surface data (RGBA met flipped Y voor OpenGL)
         texture_data = pygame.image.tostring(self.image_surface, 'RGBA', True)
         
         # Laad de textuurgegevens naar de GPU
+        # Let op: we gebruiken hier dynamisch de width/height van de surface
+        # dus als resize() is aangeroepen, pakt hij hier automatisch de nieuwe maten.
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
                     self.image_surface.get_width(), 
                     self.image_surface.get_height(), 
@@ -84,9 +101,9 @@ class GLImage:
         glGenerateMipmap(GL_TEXTURE_2D)
         
         # 2. Update de rect (positie en afmetingen)
+        # Dit zorgt dat self.image_rect ook de nieuwe breedte/hoogte heeft
         self.image_rect = self.image_surface.get_rect(topleft=self.position)
 
-        print(f"Updating texture {self.image_path}, w={self.image_rect.width}, h={self.image_rect.height}")
         glBindTexture(GL_TEXTURE_2D, 0) # Unbind
 
 
@@ -97,8 +114,6 @@ class GLImage:
         if self.image_rect:
             # Update de pixelpositie
             self.image_rect.topleft = position
-
-            print(f"Positioning image {self.image_path}, w={self.image_rect.width}, h={self.image_rect.height}, x={self.image_rect.x}, y={self.image_rect.y}")
 
             # Converteer naar OpenGL-coördinaten met behulp van de helper functie
             self.gl_left, self.gl_right, self.gl_top, self.gl_bottom = GLUtils.pixel_to_gl(

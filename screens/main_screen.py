@@ -19,14 +19,12 @@ class MainScreen(ScreenInterface):
     def __init__(self, width, height):
         self.width = width
         self.height = height
+        self.sizing_factor = 1280 / width
         self.aspect_ratio = width / height
 
         # --- INSTANTIE VAN BACKGROUND ---
         self.background_image = GLImage(image_path="assets/images/background.png", position=(0, 0)) 
-        self.background_image.image_surface = pygame.transform.smoothscale(
-            self.background_image.image_surface, 
-            (self.width, self.height)
-        ).convert_alpha()
+        self.background_image.resize(self.width, self.height)
         self.background_image.set_position((0, 0), self.width, self.height, self.aspect_ratio)
         
         # --- INSTANTIE VAN TEXT LABEL ---
@@ -58,6 +56,18 @@ class MainScreen(ScreenInterface):
             polaroid.set_rotation(angle=0) 
             self.polaroids.append(polaroid)
 
+        # --- INSTANTIE VAN START BUTTON ---
+        self.button = GLImage(image_path="assets/images/start_button.png", position=(0, 0)) 
+        self.button.resize(int(self.button.image_rect.width / self.sizing_factor), int(self.button.image_rect.height / self.sizing_factor))
+        self.button.set_position(
+            (
+                int((self.width / 2) - (self.button.image_rect.width / 2)), 
+                int((self.height / 1.3) - (self.button.image_rect.height / 2))
+            ), 
+            self.width, 
+            self.height, 
+            self.aspect_ratio
+        )
 
         self.setup_opengl_2d()
 
@@ -165,10 +175,12 @@ class MainScreen(ScreenInterface):
         # A. Update de positie van de interne rect van de label
         # Dit is nodig omdat de helper functie de rect's afmetingen en positie nodig heeft
         self.background_image.draw()
+
         for polaroid in self.polaroids:
             polaroid.draw()
+
         self.fps_label.draw()
-        
+        self.button.draw()
         
         # 4. Swap Buffers
         pygame.display.flip()
