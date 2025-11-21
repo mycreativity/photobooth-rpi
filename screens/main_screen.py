@@ -19,7 +19,7 @@ class MainScreen(ScreenInterface):
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.sizing_factor = 1280 / width
+        self.sizing_factor = width / 1280 # Basis voor schaling van UI elementen
         self.aspect_ratio = width / height
 
         # --- INSTANTIE VAN BACKGROUND ---
@@ -58,7 +58,10 @@ class MainScreen(ScreenInterface):
 
         # --- INSTANTIE VAN START BUTTON ---
         self.button = GLImage(image_path="assets/images/start_button.png", position=(0, 0)) 
-        self.button.resize(int(self.button.image_rect.width / self.sizing_factor), int(self.button.image_rect.height / self.sizing_factor))
+        self.button.resize(
+            int(self.button.image_rect.width * self.sizing_factor * 1.5), 
+            int(self.button.image_rect.height * self.sizing_factor * 1.5)
+        )
         self.button.set_position(
             (
                 int((self.width / 2) - (self.button.image_rect.width / 2)), 
