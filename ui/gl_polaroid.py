@@ -25,15 +25,17 @@ class GLPolaroid:
         self.center_pixel_x = 0
         self.center_pixel_y = 0
 
+        factor = 1.3
+
         # Vereiste Afmetingen voor de Foto binnen de Frame (voorbeeldwaarden)
         # Deze offsets bepalen hoeveel pixels de frame om de foto heen zit.
         # Een echte polaroid frame heeft een grotere offset aan de onderkant.
-        self.frame_padding_top = 29 + 18 # Shadow
-        self.frame_padding_sides = 26 + 18 # Shadow
-        self.frame_padding_bottom = 110 # Extra marge voor de onderkant
+        self.frame_padding_top = int((29 + 18)/factor) # Shadow
+        self.frame_padding_sides = int((26 + 18)/factor) # Shadow
+        self.frame_padding_bottom = int((110)/factor) # Extra marge voor de onderkant
         
-        self.photo_width = 380
-        self.photo_height = 395
+        self.photo_width = int(380/factor)
+        self.photo_height = int(395/factor)
 
         # 1. Component 1: De daadwerkelijke Foto (resizen we naar de gewenste grootte)
         self.photo = GLImage(photo_path, position=(0, 0))

@@ -1,3 +1,4 @@
+import random
 import pygame
 import pygame.font
 import math
@@ -30,8 +31,8 @@ class MainScreen(ScreenInterface):
 
         # --- INSTANTIE VAN POLAROIDS ---
         self.orbit_angle = 0.0          # Start hoek in graden
-        self.orbit_speed = 20.0         # Baansnelheid (Graden/seconde)
-        NUM_POLAROIDS = 16
+        self.orbit_speed = 5.0         # Baansnelheid (Graden/seconde)
+        NUM_POLAROIDS = 20
         self.polaroids = []
         self.angle_offset_step = 360.0 / NUM_POLAROIDS # De hoek tussen elke polaroid (360 graden / aantal)
         # Rotatiecentrum (C_x, C_y) - 300 pixels onder het midden van het scherm
@@ -46,6 +47,7 @@ class MainScreen(ScreenInterface):
             )
             # Voeg een unieke eigenschap toe om de hoekoffset op te slaan
             polaroid.angle_offset = i * self.angle_offset_step
+            polaroid.rotation_offset = random.randint(-10, 10) # Kleine random variatie
             
             # Stel de initiële positie in (nodig om de rect grootte te initialiseren)
             polaroid.set_position((0, 0), self.width, self.height, self.aspect_ratio)
@@ -130,6 +132,8 @@ class MainScreen(ScreenInterface):
             
             # +90.0 offset zorgt ervoor dat de onderkant naar het centrum wijst
             new_rotation = -target_angle_deg - 270.0
+
+            new_rotation += polaroid.rotation_offset  # Voeg de kleine random variatie toe
             
             polaroid.set_rotation(new_rotation)
             # polaroid.set_rotation(angle=-self.orbit_angle-90)
