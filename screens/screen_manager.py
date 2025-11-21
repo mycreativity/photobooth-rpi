@@ -1,21 +1,29 @@
-from ui.shapes import draw_rounded_rect_aa
-
+from .screen_interface import ScreenInterface
 
 class ScreenManager:
-    def __init__(self, screen, initial_screen_cls, background, *args, **kwargs):
-        self.screen = screen
-        self.background = background
-        self.current_screen = initial_screen_cls(screen, background, *args, **kwargs)
+    """Manages the application's current screen state."""
+    def __init__(self, start_screen: ScreenInterface):
+        self.current_screen = start_screen
+        self.current_screen.on_enter()
 
-    def switch_to(self, screen_class, *args, **kwargs):
-        self.current_screen = screen_class(self.screen, *args, **kwargs)
+    def switch_to(self, new_screen_instance: ScreenInterface, **context_data):
+        """Switches the current screen, calling on_exit and on_enter."""
+        self.current_screen.on_exit() 
+        self.current_screen = new_screen_instance
+        self.current_screen.on_enter(**context_data)
 
     def handle_event(self, event):
+        """Passes events to the current screen."""
         self.current_screen.handle_event(event, self.switch_to)
 
-    def update(self, context):
-        self.current_screen.update(context, self.switch_to)
+    def update(self, dt):
+        """Updates the logic of the current screen."""
+        self.current_screen.update(dt, self.switch_to)
 
-    def draw(self):
-        self.screen.blit(self.background, (0, 0))  # <- Always draw background first
-        self.current_screen.draw()
+    def draw(self, target_surface):
+        """Draws the current screen onto the main surface."""
+        self.current_screen.draw(target_surface)
+
+    def exit(self):
+        """Draws the current screen onto the main surface."""
+        self.current_screen.on_exit() 

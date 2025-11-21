@@ -6,6 +6,7 @@ from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.utils import get_color_from_hex
 from kivy.core.window import Window
+from kivy.metrics import dp
 from ui.card import UICard
 from ui.polaroid_carousel import PolaroidCarousel
 import config
@@ -20,7 +21,7 @@ class StartScreen(Screen):
 
         # Background image
         background = Image(
-            source='assets/images/background.png',
+            source='assets/images/background3.png',
             allow_stretch=True,
             keep_ratio=False,
             size_hint=(1, 1),
@@ -28,41 +29,24 @@ class StartScreen(Screen):
         )
         layout.add_widget(background)
 
-        # Card in center
-        card_size = (window_width / 2, window_height / 2)
-        card_x = (window_width - card_size[0]) / 2
-        card_y = -12  # from bottom
-        card = UICard(
-            color_hex=config.SURFACE_COLOR,
-            size_hint=(None, None),
-            size=card_size,
-            pos=(card_x, card_y)
+        # Arrow left
+        arrow = Image(
+            source='assets/images/arrow-down.png',
+            keep_ratio=False,
+            size_hint=(dp(201), dp(202)),
+            pos_hint={"center_x": 0.5, "y": 0}
         )
+        layout.add_widget(arrow)
 
-        card.add_widget(Label(
-            text="Take Your Photo!", 
-            font_name=config.FONT_HEADING, 
-            font_size='60sp', 
-            color=get_color_from_hex(config.SECONDARY_COLOR), 
-            size_hint=(1, 0.05),
-            pos_hint={'y': 0.7}
-            ))
-        
-        button = Button(text="TAKE PHOTO", size_hint=(1, 0.2), font_size='32sp')
-        button.bind(on_press=self.on_take_photo)
-        card.add_widget(button)
-
-        card.add_widget(Label(
-            text="Press any button to start", 
-            font_name=config.FONT_LABEL, 
-            font_size='30sp', 
-            color=get_color_from_hex(config.SECONDARY_COLOR), 
-            size_hint=(1, 0.1)
-            ))
-
-        
-
-        layout.add_widget(card)
+        # Arrow right
+        arrow = Image(
+            source='assets/images/arrow-down.png',
+            # allow_stretch=True,
+            # keep_ratio=False,
+            # size_hint=(1, 1),
+            pos=(300, 0)
+        )
+        layout.add_widget(arrow)
 
         self.add_widget(layout)  # Add layout to screen
 
