@@ -6,19 +6,19 @@ from PIL import Image
 
 class GPhoto2EOSCameraHandler(threading.Thread):
     """
-    Handler voor gphoto2-communicatie (Live View, foto's)
-    Erft van threading.Thread voor asynchrone Live View.
+    Handler for gphoto2 communication (Live View, photos)
+    Inherits from threading.Thread for asynchronous Live View.
     """
     def __init__(self):
-        # Initialiseert de thread functionaliteit
+        # Initializes the thread functionality
         super().__init__() 
         self.running = False
         self.live_view_active = False
-        self.latest_image = None # Slaat het laatste PIL Image object op
-        self.image_lock = threading.Lock() # Lock om veilig toegang te krijgen tot latest_image
-        self._stop_event = threading.Event() # Event om de thread te stoppen
+        self.latest_image = None # Stores the latest PIL Image object
+        self.image_lock = threading.Lock() # Lock to safely access latest_image
+        self._stop_event = threading.Event() # Event to stop the thread
 
-        # Initialiseer camera
+        # Initialize camera
         self.camera = gp.Camera()
         self.camera.init()
         self.config = self.camera.get_config()
@@ -40,7 +40,7 @@ class GPhoto2EOSCameraHandler(threading.Thread):
             print('No camera model info')
             self.camera_model = ''
             
-        # Oude logica voor 350D/onbekende modellen (niet relevant voor 750D, maar overgenomen uit focus-gui.py)
+        # Old logic for 350D/unknown models (not relevant for 750D, but adapted from focus-gui.py)
         if self.camera_model == 'unknown':
             OK, capture_size_class = gp.gp_widget_get_child_by_name(
                 self.config, 'capturesizeclass')
@@ -49,39 +49,39 @@ class GPhoto2EOSCameraHandler(threading.Thread):
                 capture_size_class.set_value(value)
                 self.camera.set_config(self.config)
         else:
-            # Zet de camera in preview-modus om de spiegel op te klappen (belangrijk voor Canon)
+            # Set camera to preview mode to flip up mirror (important for Canon)
             try:
                 gp.gp_camera_capture_preview(self.camera)
             except gp.GPhoto2Error as e:
-                print(f"Waarschuwing: Kan preview niet starten. Fout: {e}")
+                print(f"Warning: Cannot start preview. Error: {e}")
 
-    # De 'run' methode wordt automatisch aangeroepen wanneer thread.start() wordt gebruikt
+    # The 'run' method is automatically called when thread.start() is used
     def run(self):
         """
-        De hoofd lus voor continue Live View (als deze geactiveerd is).
+        The main loop for continuous Live View (if activated).
         """
         while not self._stop_event.is_set():
             if self.live_view_active:
-                # Roep de preview functie aan. Deze is blokkerend per frame.
+                # Call the preview function. This is blocking per frame.
                 image = self._do_preview()
                 
                 if image:
-                    # Sla het ontvangen beeld veilig op
+                    # Safely store the received image
                     with self.image_lock:
                         self.latest_image = image
                 
-                # Voeg een kleine pauze toe om de CPU te ontlasten
-                # en de camera ademruimte te geven (kan eventueel worden verwijderd)
+                # Add a small pause to relieve CPU
+                # and give camera breathing room (can be removed if needed)
                 time.sleep(0.005) 
             else:
-                # Slaapt zolang er geen Live View actief is
+                # Sleep as long as Live View is not active
                 time.sleep(0.1) 
 
-    # --- Publieke Methoden voor Externe Aanroepen ---
+    # --- Public Methods for External Calls ---
 
     def start_continuous(self):
         """
-        Activeert de continue Live View modus en start de thread als deze nog niet draait.
+        Activates continuous Live View mode and starts thread if not running.
         """
         if not self._set_config():
             return
@@ -94,21 +94,21 @@ class GPhoto2EOSCameraHandler(threading.Thread):
 
     def stop_continuous(self):
         """
-        Deactiveert de continue Live View modus.
+        Deactivates continuous Live View mode.
         """
         self.live_view_active = False
 
     def get_latest_image(self):
         """
-        Haalt het laatst ontvangen PIL Image object op.
+        Retrieves the latest received PIL Image object.
         """
         with self.image_lock:
             return self.latest_image
 
     def one_shot(self):
         """
-        Vraagt één enkele preview op (blokkerend).
-        Geeft de PIL Image terug.
+        Requests a single preview (blocking).
+        Returns the PIL Image.
         """
         if self.running:
             print("Kan geen one-shot doen: continuous mode is actief.")
@@ -121,8 +121,8 @@ class GPhoto2EOSCameraHandler(threading.Thread):
 
     def take_photo(self):
         """
-        Maakt een volledige foto (blokkerend).
-        Geeft de PIL Image terug.
+        Takes a full photo (blocking).
+        Returns the PIL Image.
         """
         if self.running:
             print("Kan geen foto maken: continuous mode is actief.")
@@ -133,31 +133,31 @@ class GPhoto2EOSCameraHandler(threading.Thread):
 
     def shut_down(self):
         """
-        Sluit de thread en de camera-verbinding correct af.
+        Closes the thread and camera connection correctly.
         """
         self._stop_event.set()
 
         if self.is_alive():
-            self.join() # Wacht tot de thread klaar is
+            self.join() # Wait for thread to finish
         
         self._reset_config()
         self.camera.exit()
 
-    # --- Interne Hulpfuncties ---
+    # --- Internal Helper Functions ---
     
     def _do_preview(self):
-        # Vraagt een preview frame aan
+        # Requests a preview frame
         try:
             _, camera_file = gp.gp_camera_capture_preview(self.camera)
             return self._send_file(camera_file)
         except gp.GPhoto2Error as e:
-             print(f'Fout bij opvragen preview: {e}')
-             # Zet Live View uit bij fout
+             print(f'Error requesting preview: {e}')
+             # Turn off Live View on error
              self.live_view_active = False
              return None
              
     def _do_capture(self):
-        # Vraagt een volledige foto aan (traag)
+        # Requests a full photo (slow)
         try:
             _, camera_file_path = gp.gp_camera_capture(
                 self.camera, gp.GP_CAPTURE_IMAGE)
@@ -171,11 +171,11 @@ class GPhoto2EOSCameraHandler(threading.Thread):
 
     def _send_file(self, camera_file):
         """
-        Verwerkt de binaire camera data en geeft een PIL Image object terug.
+        Processes binary camera data and returns a PIL Image object.
         """
         file_data = camera_file.get_data_and_size()
         image = Image.open(io.BytesIO(file_data))
-        # Image.load() is nodig om de data in de thread te verwerken voordat we het lock vrijgeven
+        # Image.load() is needed to process data in thread before releasing lock
         image.load() 
         return image
 
@@ -199,7 +199,7 @@ class GPhoto2EOSCameraHandler(threading.Thread):
         if OK >= gp.GP_OK:
             value = image_format.get_value()
             if 'raw' in value.lower():
-                print('Kan geen preview van RAW-afbeeldingen weergeven')
+                print('Cannot preview RAW images')
                 return False
         return True
 

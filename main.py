@@ -1,6 +1,6 @@
 import sys
 import pygame
-import pygame.camera
+import pygame
 import faulthandler
 # Import OpenGL necessary for setting up the context
 from OpenGL.GL import *
@@ -38,27 +38,26 @@ def main():
     Main entry point. 
     Initializes Pygame, detects screen size, creates window.
     """
-    # 1. Initialize Pygame EERST (nodig om scherminfo op te halen)
+    # 1. Initialize Pygame FIRST (needed to get screen info)
     pygame.init()
-    # pygame.camera.init()
 
-    # Configuratie voor OpenGL buffers
+    # Configuration for OpenGL buffers
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)
     
     if not pygame.font.get_init():
         pygame.font.init()
 
-    # --- AANPASSING: Schermgrootte detecteren ---
+    # --- CHANGE: Detect screen size ---
     info_object = pygame.display.Info()
     screen_width = info_object.current_w
     screen_height = info_object.current_h
     
-    # Optioneel: Als je wilt dat het een window is dat niet het hele scherm vult,
-    # kun je hier bijvoorbeeld screen_width = 1280 hardcoden als fallback.
+    # Optional: If you want a window that doesn't fill the entire screen,
+    # you can hardcode e.g. screen_width = 1280 here as fallback.
 
-    # Flags instellen
-    # pygame.FULLSCREEN is toegevoegd zodat het scherm randloos gevuld wordt.
+    # Set flags
+    # pygame.FULLSCREEN is added so the screen is filled borderless.
     display_flags = pygame.OPENGL | pygame.DOUBLEBUF #| pygame.FULLSCREEN
 
     screen = pygame.display.set_mode(
@@ -75,7 +74,7 @@ def main():
 
     # 2. Initialize Screens
     try:
-        # MainScreen krijgt nu de dynamische width/height mee
+        # MainScreen now gets the dynamic width/height
         # start_screen = MainScreen(screen_width, screen_height)
         start_screen = CountdownScreen(screen_width, screen_height)
         
@@ -93,7 +92,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            # Zorg dat ESCAPE de fullscreen app kan afsluiten
+            # Ensure ESCAPE can close the fullscreen app
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False

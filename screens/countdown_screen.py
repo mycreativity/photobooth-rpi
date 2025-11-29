@@ -1,19 +1,17 @@
 import pygame
-import threading # Nodig voor Threading
-import time # Nodig voor de initiële sleep
-import gphoto2 as gp # Nodig voor gphoto2
-from PIL import Image # Nodig voor beeldverwerking
+# import threading # Needed for Threading
+# import time # Needed for initial sleep
+import gphoto2 as gp # Needed for gphoto2
+from PIL import Image # Needed for image processing
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
 
-import pygame
-# ... (alle andere imports zijn prima) ...
 
 class CountdownScreen():
-    """Het hoofdscherm voor de photobooth met live camerafeed."""
+    """The main screen for the photobooth with live camera feed."""
     
     def __init__(self, width, height):
         self.width = width
@@ -22,13 +20,13 @@ class CountdownScreen():
         
         self.camera_texture_id = glGenTextures(1)
 
-        # 🚨 VOEG DEZE TOE: Veilige standaardwaarden voor camera-afmetingen
+        # 🚨 ADDED: Safe default values for camera dimensions
         self.cam_width = 0 
         self.cam_height = 0
         self.cam_aspect_ratio = 1.0
-        self.setup_complete = False # Vlag om aan te geven dat de textuur is gealloceerd
+        self.setup_complete = False # Flag to indicate texture is allocated
 
-        # --- INITIALISEER UV ATTRIBUTEN MET VEILIGE STANDAARDWAARDEN ---
+        # --- INITIALIZE UV ATTRIBUTES WITH SAFE DEFAULTS ---
         self.uv_left = 0.0
         self.uv_right = 1.0
         self.uv_top = 0.0
@@ -37,8 +35,8 @@ class CountdownScreen():
         self.camera_handler = GPhoto2EOSCameraHandler()
         self.camera_handler.start_continuous()
 
-        # Wacht NIET op het eerste frame hier. We doen dit asynchroon in update().
-        # Dit voorkomt dat de app bevriest bij het opstarten.
+        # Do NOT wait for the first frame here. We do this asynchronously in update().
+        # This prevents the app from freezing at startup.
         self.setup_complete = False 
 
         self.setup_opengl_2d()
@@ -48,19 +46,19 @@ class CountdownScreen():
     # --- De ontbrekende of benodigde methode toevoegen ---
 
     def _initialize_camera_texture(self):
-        """Initialisatie van de OpenGL Texture ruimte (eenmalig in __init__)."""
-        if not self.setup_complete: # Voorkom dubbele init.
+        """Initialization of OpenGL Texture space (one-time in __init__)."""
+        if not self.setup_complete: # Prevent double init
             glBindTexture(GL_TEXTURE_2D, self.camera_texture_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             
-            # Allocatie van de ruimte op basis van het EERSTE ontvangen frame
+            # Allocation of space based on the FIRST received frame
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, self.cam_width, self.cam_height, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
             glBindTexture(GL_TEXTURE_2D, 0)
     
     def _calculate_crop_uvs(self):
-        """Berekent de UV-coördinaten voor Crop-to-Fit."""
-        # Aangenomen dat deze logica elders correct is gedefinieerd en hier wordt ingevoegd.
+        """Calculates UV coordinates for Crop-to-Fit."""
+        # Assuming this logic is defined correctly elsewhere and inserted here.
         if self.cam_aspect_ratio > self.screen_aspect_ratio:
             ratio_factor = self.screen_aspect_ratio / self.cam_aspect_ratio 
             uv_x_offset = (1.0 - ratio_factor) / 2.0
@@ -76,11 +74,11 @@ class CountdownScreen():
             self.uv_top = uv_y_offset 
             self.uv_bottom = 1.0 - uv_y_offset
 
-    # --- Verbeterde `update_camera_texture` ---
+    # --- Improved `update_camera_texture` ---
     
     def update_camera_texture(self, pil_image):
         
-        # --- 1. Voorbereiding van PIL Image en Formaten ---
+        # --- 1. Preparation of PIL Image and Formats ---
         if pil_image.mode not in ('RGB', 'L'):
              pil_image = pil_image.convert('RGB')
              
@@ -94,12 +92,12 @@ class CountdownScreen():
              gl_internal_format = GL_RGB8 
         
         
-        # --- 2. Dynamische Resolutie-Check (AANGEPAST) ---
+        # --- 2. Dynamic Resolution Check (ADJUSTED) ---
         current_width, current_height = pil_image.size
         needs_reallocation = False
 
         if current_width != self.cam_width or current_height != self.cam_height:
-            # Resolutie is veranderd, moet opnieuw alloceren
+            # Resolution changed, must reallocate
             self.cam_width = current_width
             self.cam_height = current_height
             self.cam_aspect_ratio = current_width / current_height
@@ -107,16 +105,16 @@ class CountdownScreen():
             needs_reallocation = True
             
         
-        # --- 3. Textuur Upload ---
+        # --- 3. Texture Upload ---
         
         glBindTexture(GL_TEXTURE_2D, self.camera_texture_id)
         
-        # 🚨 KRITIEKE CORRECTIE: FORCEER 1-BYTE PIXEL ALIGNMENT
-        # Dit is de meest voorkomende oplossing voor GLError 1282 bij glTexSubImage2D
+        # 🚨 CRITICAL FIX: FORCE 1-BYTE PIXEL ALIGNMENT
+        # This is the most common solution for GLError 1282 at glTexSubImage2D
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 
         if needs_reallocation:
-            # Allocoer nieuwe ruimte en upload data
+            # Allocate new space and upload data
             glTexImage2D( 
                 GL_TEXTURE_2D, 
                 0, gl_internal_format, 
@@ -127,7 +125,7 @@ class CountdownScreen():
                 frame_bytes 
             )
         else:
-            # Update alleen de data in de bestaande ruimte (sneller)
+            # Update only data in existing space (faster)
             glTexSubImage2D(
                 GL_TEXTURE_2D, 
                 0, 0, 0,
@@ -140,10 +138,10 @@ class CountdownScreen():
 
         glBindTexture(GL_TEXTURE_2D, 0)
 
-    # --- draw en andere methoden zijn verder OK ---
+    # --- draw and other methods are otherwise OK ---
 
     def draw(self, target_surface):
-        """Tekent de full-screen gecropte camera textuur."""
+        """Draws the full-screen cropped camera texture."""
         
         glClearColor(0.0, 0.0, 0.0, 1.0) 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)     
@@ -153,23 +151,23 @@ class CountdownScreen():
         
         pil_image = self.camera_handler.get_latest_image()
         
-        # 🚨 GEBRUIK self.setup_complete HIER WEER VOOR STABILITEIT
-        if self.setup_complete and pil_image: # Alleen tekenen als de textuur is gealloceerd
+        # 🚨 USE self.setup_complete HERE AGAIN FOR STABILITY
+        if self.setup_complete and pil_image: # Only draw if texture is allocated
             
-            # 1. UPLOAD HET NIEUWE FRAME
+            # 1. UPLOAD THE NEW FRAME
             self.update_camera_texture(pil_image)
 
             # ... (Rest van de NDC matrix setup) ...
             
-            # Bind de textuur voordat je begint met tekenen
+            # Bind the texture before starting to draw
             glBindTexture(GL_TEXTURE_2D, self.camera_texture_id) 
             
-            # 🚨 FIX: Zorg dat de tekenkleur wit is, anders wordt de textuur zwart vermenigvuldigd
+            # 🚨 FIX: Ensure draw color is white, otherwise texture is multiplied by black
             glColor3f(1.0, 1.0, 1.0)
-            glEnable(GL_TEXTURE_2D) # Zeker weten dat textures aan staan
+            glEnable(GL_TEXTURE_2D) # Ensure textures are on
 
-            # Teken de full-screen quad met pixel-coördinaten (want gluOrtho2D is ingesteld op 0..width, height..0)
-            # Let op: gluOrtho2D(0, width, height, 0) betekent:
+            # Draw full-screen quad with pixel coordinates (since gluOrtho2D is set to 0..width, height..0)
+            # Note: gluOrtho2D(0, width, height, 0) means:
             # 0,0 = Top-Left
             # width, height = Bottom-Right
             
@@ -188,9 +186,9 @@ class CountdownScreen():
             
             # ... (Unbind en herstel matrices) ...
         else:
-            # Als setup nog niet klaar is, teken een laadscherm of placeholder
+            # If setup not ready, draw loading screen or placeholder
             if not self.setup_complete:
-                 pass # Of teken tekst "Loading..."
+                 pass # Or draw text "Loading..."
             elif not pil_image:
                  print("Warning: Setup complete but no image to draw.")
             
@@ -204,7 +202,7 @@ class CountdownScreen():
 
 
     def setup_opengl_2d(self):
-        """Initialiseert de OpenGL 2D omgeving."""
+        """Initializes the OpenGL 2D environment."""
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_MULTISAMPLE) 
         glEnable(GL_TEXTURE_2D)
@@ -221,11 +219,11 @@ class CountdownScreen():
         glEnable(GL_POLYGON_SMOOTH)
 
     def update(self, dt, callback):
-        # Probeer de camera te initialiseren als dat nog niet gebeurd is
+        # Try to initialize camera if not done yet
         if not self.setup_complete:
             initial_frame = self.camera_handler.get_latest_image()
             if initial_frame:
-                print("Camera frame ontvangen! Initialiseren van OpenGL texture...")
+                print("Camera frame received! Initializing OpenGL texture...")
                 self.cam_width, self.cam_height = initial_frame.size
                 self.cam_aspect_ratio = self.cam_width / self.cam_height
                 
