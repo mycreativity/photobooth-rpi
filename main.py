@@ -75,8 +75,7 @@ def main():
     # 2. Initialize Screens
     try:
         # MainScreen now gets the dynamic width/height
-        # start_screen = MainScreen(screen_width, screen_height)
-        start_screen = CountdownScreen(screen_width, screen_height)
+        start_screen = MainScreen(screen_width, screen_height)
         
         manager = ScreenManager(start_screen)
     except Exception as e:
