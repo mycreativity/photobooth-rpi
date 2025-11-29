@@ -7,6 +7,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from config import *
+from screens.countdown_screen import CountdownScreen
 from ui.gl_image import GLImage
 from ui.gl_polaroid import GLPolaroid
 from ui.gl_text_label import GLTextLabel
@@ -98,8 +99,13 @@ class MainScreen(ScreenInterface):
         glEnable(GL_POLYGON_SMOOTH)
 
     def handle_event(self, event, switch_screen_callback):
-        # ... (onveranderd)
-        pass
+        # Reageer op een muisklik (of touch-tap, wat vaak als mouse click wordt gezien)
+        if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+            print("Scherm aangeraakt! Start procedure...")
+            
+            # Roep direct de callback aan, ongeacht waar er geklikt is
+            countdown_screen = CountdownScreen(self.width, self.height)
+            switch_screen_callback(countdown_screen)
 
     def update_polaroid_position(self, dt):
         """

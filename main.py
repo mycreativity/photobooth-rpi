@@ -1,9 +1,11 @@
 import sys
 import pygame
+import pygame.camera
 import faulthandler
 # Import OpenGL necessary for setting up the context
 from OpenGL.GL import *
 from OpenGL.GLU import * 
+from screens.countdown_screen import CountdownScreen
 from screens.screen_manager import ScreenManager
 from screens.main_screen import MainScreen
 
@@ -38,6 +40,7 @@ def main():
     """
     # 1. Initialize Pygame EERST (nodig om scherminfo op te halen)
     pygame.init()
+    # pygame.camera.init()
 
     # Configuratie voor OpenGL buffers
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
@@ -56,7 +59,7 @@ def main():
 
     # Flags instellen
     # pygame.FULLSCREEN is toegevoegd zodat het scherm randloos gevuld wordt.
-    display_flags = pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN
+    display_flags = pygame.OPENGL | pygame.DOUBLEBUF #| pygame.FULLSCREEN
 
     screen = pygame.display.set_mode(
         (screen_width, screen_height), 
@@ -73,7 +76,8 @@ def main():
     # 2. Initialize Screens
     try:
         # MainScreen krijgt nu de dynamische width/height mee
-        start_screen = MainScreen(screen_width, screen_height)
+        # start_screen = MainScreen(screen_width, screen_height)
+        start_screen = CountdownScreen(screen_width, screen_height)
         
         manager = ScreenManager(start_screen)
     except Exception as e:
