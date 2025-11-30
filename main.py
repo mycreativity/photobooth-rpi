@@ -72,18 +72,96 @@ def main():
 
     print(f"Starting {APP_TITLE} (Detected: {screen_width}x{screen_height})...")
 
-    # 2. Initialize Screens
+    # 2. Show Loading Screen (Before Camera Init)
     try:
-        # MainScreen now gets the dynamic width/height
-        start_screen = MainScreen(screen_width, screen_height)
+        # Setup Ortho 2D for pixel coordinates
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0, screen_width, screen_height, 0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
         
-        manager = ScreenManager(start_screen)
+        glClear(GL_COLOR_BUFFER_BIT)
+        
+        def draw_temp_texture(path, x, y, target_w=None, target_h=None):
+            try:
+                surf = pygame.image.load(path).convert_alpha()
+                if target_w and target_h:
+                    surf = pygame.transform.scale(surf, (target_w, target_h))
+                
+                w, h = surf.get_size()
+                data = pygame.image.tostring(surf, "RGBA", 1)
+                
+                tex_id = glGenTextures(1)
+                glBindTexture(GL_TEXTURE_2D, tex_id)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+                
+                glEnable(GL_TEXTURE_2D)
+                glColor3f(1, 1, 1)
+                
+                glBegin(GL_QUADS)
+                glTexCoord2f(0, 0); glVertex2f(x, y)
+                glTexCoord2f(1, 0); glVertex2f(x + w, y)
+                glTexCoord2f(1, 1); glVertex2f(x + w, y + h)
+                glTexCoord2f(0, 1); glVertex2f(x, y + h)
+                glEnd()
+                
+                glDeleteTextures([tex_id])
+            except Exception as e:
+                print(f"Loading screen error ({path}): {e}")
+
+        # Draw Background
+        draw_temp_texture("assets/images/background-loading.png", 0, 0, screen_width, screen_height)
+        
+        # Draw Logo (Centered)
+        try:
+            logo_surf = pygame.image.load("assets/images/logo-loomo.png")
+            lw, lh = logo_surf.get_size()
+            lx = (screen_width - lw) // 2
+            ly = (screen_height - lh) // 2
+            draw_temp_texture("assets/images/logo-loomo.png", lx, ly)
+        except:
+            pass
+
+        pygame.display.flip()
+        pygame.event.pump()
+        
+    except Exception as e:
+        print(f"Warning: Could not show loading screen: {e}")
+
+    # 3. Initialize Camera
+    # Choose your camera handler here
+    # from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
+    from cameras.webcam_camera_handler import WebcamCameraHandler
+    
+    # camera = GPhoto2EOSCameraHandler()
+    camera = WebcamCameraHandler(camera_index=0)
+    
+    # Start camera thread
+    camera.start_continuous()
+
+    # 4. Initialize Screens & Manager
+    try:
+        manager = ScreenManager()
+        
+        # Create screen instances
+        main_screen = MainScreen(screen_width, screen_height)
+        countdown_screen = CountdownScreen(screen_width, screen_height, camera)
+        
+        # Register screens
+        manager.add_screen('main', main_screen)
+        manager.add_screen('countdown', countdown_screen)
+        
+        # Set initial screen
+        manager.set_initial_screen('main')
+        
     except Exception as e:
         print(f"Error initializing screens: {e}")
-        pygame.quit()
         sys.exit(1)
 
-    # 3. Main Game Loop
+    # 5. Main Game Loop
     running = True
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -101,9 +179,12 @@ def main():
         manager.update(dt)
         manager.draw(screen) 
         
-    # 4. Cleanup
+    # 6. Cleanup
     print("Application closing...")
     manager.exit()
+    if camera:
+        print("Shutting down camera...")
+        camera.shut_down()
     pygame.quit()
     sys.exit(0)
 

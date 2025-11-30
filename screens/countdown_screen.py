@@ -5,6 +5,7 @@ import gphoto2 as gp # Needed for gphoto2
 from PIL import Image # Needed for image processing
 from OpenGL.GL import *
 from OpenGL.GLU import *
+import pygame.font # Ensure font is imported
 
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
@@ -13,13 +14,14 @@ from screens.screen_interface import ScreenInterface
 class CountdownScreen():
     """The main screen for the photobooth with live camera feed."""
     
-    def __init__(self, width, height):
+    def __init__(self, width, height, camera):
         self.width = width
         self.height = height
+        self.camera_handler = camera
         self.screen_aspect_ratio = width / height
         
-        self.camera_texture_id = glGenTextures(1)
-
+        self.camera_texture_id = None # glGenTextures(1) - Delayed to _initialize_camera_texture
+        
         # 🚨 ADDED: Safe default values for camera dimensions
         self.cam_width = 0 
         self.cam_height = 0
@@ -32,22 +34,30 @@ class CountdownScreen():
         self.uv_top = 0.0
         self.uv_bottom = 1.0
 
-        self.camera_handler = GPhoto2EOSCameraHandler()
-        self.camera_handler.start_continuous()
-
         # Do NOT wait for the first frame here. We do this asynchronously in update().
         # This prevents the app from freezing at startup.
         self.setup_complete = False 
 
-        self.setup_opengl_2d()
+        # self.setup_opengl_2d() # Moved to on_enter
+        
+        # Initialize font for loading text
+        if not pygame.font.get_init():
+            pygame.font.init()
+        self.font = pygame.font.SysFont("Arial", 36)
 
     def handle_event(self, event, switch_screen_callback):
-        pass
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                # Example: Switch back to main screen
+                switch_screen_callback('main')
     # --- De ontbrekende of benodigde methode toevoegen ---
 
     def _initialize_camera_texture(self):
         """Initialization of OpenGL Texture space (one-time in __init__)."""
         if not self.setup_complete: # Prevent double init
+            if self.camera_texture_id is None:
+                 self.camera_texture_id = glGenTextures(1)
+            
             glBindTexture(GL_TEXTURE_2D, self.camera_texture_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -146,8 +156,16 @@ class CountdownScreen():
         glClearColor(0.0, 0.0, 0.0, 1.0) 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)     
         
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0, self.width, self.height, 0)
+        
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        
+        glDisable(GL_BLEND) # Disable blending for opaque camera feed
+        glDisable(GL_LIGHTING) # Ensure lighting is off
+        glDisable(GL_DEPTH_TEST) # Ensure depth test is off
         
         pil_image = self.camera_handler.get_latest_image()
         
@@ -155,10 +173,9 @@ class CountdownScreen():
         if self.setup_complete and pil_image: # Only draw if texture is allocated
             
             # 1. UPLOAD THE NEW FRAME
+            # print(f"CountdownScreen: Drawing frame {pil_image.size}")
             self.update_camera_texture(pil_image)
 
-            # ... (Rest van de NDC matrix setup) ...
-            
             # Bind the texture before starting to draw
             glBindTexture(GL_TEXTURE_2D, self.camera_texture_id) 
             
@@ -187,10 +204,18 @@ class CountdownScreen():
             # ... (Unbind en herstel matrices) ...
         else:
             # If setup not ready, draw loading screen or placeholder
-            if not self.setup_complete:
-                 pass # Or draw text "Loading..."
-            elif not pil_image:
-                 print("Warning: Setup complete but no image to draw.")
+            if not self.setup_complete or not pil_image:
+                 # Draw a red placeholder box
+                 glColor3f(1.0, 0.0, 0.0) # Red
+                 glBegin(GL_QUADS)
+                 glVertex2f(0, 0)
+                 glVertex2f(self.width, 0)
+                 glVertex2f(self.width, self.height)
+                 glVertex2f(0, self.height)
+                 glEnd()
+                 
+                 # Optional: Print once
+                 # print("Waiting for camera frame...")
             
             # ... (Unbind en herstel matrices) ...
         
@@ -198,7 +223,12 @@ class CountdownScreen():
         
     def on_exit(self):
         print("Exiting CountdownScreen.")
-        self.camera_handler.shut_down()
+        # Do NOT shut down the camera thread here, as we want to reuse it.
+        # Just stop the continuous capture (Live View) to save resources if needed.
+        # However, for instant switching, we might want to keep it running.
+        # For now, let's pause it.
+        # self.camera_handler.stop_continuous() 
+        pass
 
 
     def setup_opengl_2d(self):
@@ -230,8 +260,16 @@ class CountdownScreen():
                 self._initialize_camera_texture()
                 self._calculate_crop_uvs()
                 self.setup_complete = True
+            else:
+                # print("CountdownScreen: Waiting for initial frame...")
+                pass
 
 
 
     def on_enter(self, **context_data):
         print("Entering CountdownScreen.")
+        # Ensure camera is running
+        self.camera_handler.start_continuous()
+        
+        # Restore the OpenGL state for this screen
+        self.setup_opengl_2d()

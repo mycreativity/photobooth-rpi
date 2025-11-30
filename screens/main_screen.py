@@ -60,8 +60,8 @@ class MainScreen(ScreenInterface):
         # --- INSTANTIE VAN START BUTTON ---
         self.button = GLImage(image_path="assets/images/start_button.png", position=(0, 0)) 
         self.button.resize(
-            int(self.button.image_rect.width * self.sizing_factor * 1.5), 
-            int(self.button.image_rect.height * self.sizing_factor * 1.5)
+            int(self.button.image_rect.width * self.sizing_factor * 0.75), 
+            int(self.button.image_rect.height * self.sizing_factor * 0.75)
         )
         self.button.set_position(
             (
@@ -73,7 +73,7 @@ class MainScreen(ScreenInterface):
             self.aspect_ratio
         )
 
-        self.setup_opengl_2d()
+        # self.setup_opengl_2d() # Moved to on_enter
 
 
     def setup_opengl_2d(self):
@@ -103,9 +103,8 @@ class MainScreen(ScreenInterface):
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
             print("Scherm aangeraakt! Start procedure...")
             
-            # Roep direct de callback aan, ongeacht waar er geklikt is
-            countdown_screen = CountdownScreen(self.width, self.height)
-            switch_screen_callback(countdown_screen)
+            # Call callback with screen name
+            switch_screen_callback('countdown')
 
     def update_polaroid_position(self, dt):
         """
@@ -177,8 +176,17 @@ class MainScreen(ScreenInterface):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)     
         
         # 2. Reset (Modelview Matrix)
+        # Ensure Projection is correct for MainScreen
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(-self.aspect_ratio, self.aspect_ratio, -1.0, 1.0)
+        
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        
+        # Ensure we are drawing white (full color) and textures are on
+        glColor3f(1.0, 1.0, 1.0)
+        glEnable(GL_TEXTURE_2D)
         
         # 3. Teken de label (gebruik de helper functie als argument)
         # A. Update de positie van de interne rect van de label
@@ -199,6 +207,9 @@ class MainScreen(ScreenInterface):
         print("Entering MainScreen.")
         if "message" in context_data:
             print(f"Status: {context_data['message']}")
+        
+        # Restore the OpenGL state for this screen
+        self.setup_opengl_2d()
 
     def on_exit(self):
         print("Exiting MainScreen.")

@@ -1,38 +1,39 @@
-import abc
-import numpy as np
+from abc import ABC, abstractmethod
+from PIL import Image
 
-class CameraInterface(abc.ABC):
-    """Abstract interface for all camera implementations."""
+class CameraInterface(ABC):
+    """
+    Abstract base class for camera implementations.
+    Defines the interface for both threaded (handler) and blocking cameras.
+    """
 
-    @abc.abstractmethod
-    def start(self, width, height):
-        """Initializes the camera and attempts to set resolution."""
+    @abstractmethod
+    def start_continuous(self):
+        """Starts the continuous capture thread (Live View)."""
         pass
 
-    @abc.abstractmethod
-    def read_frame(self) -> np.ndarray | None:
-        """Reads a new frame from the camera, returning it as a NumPy array (BGR format)."""
+    @abstractmethod
+    def stop_continuous(self):
+        """Stops the continuous capture thread."""
         pass
 
-    @abc.abstractmethod
-    def release(self):
-        """Releases the camera hardware."""
+    @abstractmethod
+    def get_latest_image(self) -> Image.Image | None:
+        """
+        Returns the latest available frame as a PIL Image.
+        Returns None if no frame is available yet.
+        """
         pass
 
-    @property
-    @abc.abstractmethod
-    def is_opened(self) -> bool:
-        """Returns True if the camera is currently open and ready."""
+    @abstractmethod
+    def take_photo(self) -> Image.Image | None:
+        """
+        Takes a high-quality photo (blocking).
+        Returns the photo as a PIL Image.
+        """
         pass
-
-    @property
-    @abc.abstractmethod
-    def resolution(self) -> tuple[int, int]:
-        """Returns the actual resolution (width, height) of the captured frames."""
-        pass
-
-    @property
-    @abc.abstractmethod
-    def aspect_ratio(self) -> float:
-        """Returns the aspect ratio (width / height) of the captured frames."""
+    
+    @abstractmethod
+    def shut_down(self):
+        """Releases all resources and stops threads."""
         pass
