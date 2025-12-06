@@ -3,6 +3,9 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from utils.gl_utils import GLUtils
+from utils.logger import get_logger
+
+logger = get_logger("GLImage")
 
 class GLImage:
     """Rendert en beheert een afbeelding van de schijf als OpenGL textuur op basis van Pygame Surface."""
@@ -42,7 +45,7 @@ class GLImage:
             return True
             
         except pygame.error as e:
-            print(f"Fout bij het laden van afbeelding '{path}': {e}")
+            logger.error(f"Fout bij het laden van afbeelding '{path}': {e}")
             self.image_surface = None
             self.image_rect = None
             return False

@@ -3,6 +3,9 @@ import time
 import cv2
 from PIL import Image
 from .camera_interface import CameraInterface
+from utils.logger import get_logger
+
+logger = get_logger("WebcamHandler")
 
 class WebcamCameraHandler(CameraInterface, threading.Thread):
     """
@@ -48,7 +51,7 @@ class WebcamCameraHandler(CameraInterface, threading.Thread):
                 time.sleep(0.01) 
             else:
                 if self.live_view_active and (not self.camera or not self.camera.isOpened()):
-                     print("WebcamHandler Warning: Camera not opened yet or failed to open.")
+                     logger.warn("Camera not opened yet or failed to open.")
                 # Sleep as long as Live View is not active
                 time.sleep(0.1) 
 
@@ -65,9 +68,9 @@ class WebcamCameraHandler(CameraInterface, threading.Thread):
             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             
             if not self.camera.isOpened():
-                print(f"WebcamHandler Error: Could not open camera index {self.camera_index}")
+                logger.error(f"Could not open camera index {self.camera_index}")
             else:
-                print(f"WebcamHandler: Camera index {self.camera_index} opened successfully.")
+                logger.info(f"Camera index {self.camera_index} opened successfully.")
         
         self.live_view_active = True
         
@@ -116,8 +119,8 @@ class WebcamCameraHandler(CameraInterface, threading.Thread):
         if self.is_alive():
             self.join(timeout=2.0) # Wait max 2 seconds
             if self.is_alive():
-                print("WebcamHandler: Thread did not exit in time. Forcing shutdown.")
+                logger.warn("Thread did not exit in time. Forcing shutdown.")
         
         if self.camera:
             self.camera.release()
-            print("WebcamHandler: Camera released.")
+            logger.info("Camera released.")

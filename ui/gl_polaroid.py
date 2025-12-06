@@ -18,29 +18,27 @@ class GLPolaroid:
     om een Polaroid-effect te creëren.
     """
 
-    def __init__(self, photo_path, frame_path):
+    def __init__(self, photo_path, size = 448):
         
         self.rotation_angle = 0.0 # Hoek in graden
         # Het rotatiecentrum moet het midden van de totale frame zijn
         self.center_pixel_x = 0
         self.center_pixel_y = 0
 
-        factor = 1.3
+        frame_path = "assets/images/polaroid-frame.png"
 
-        # Vereiste Afmetingen voor de Foto binnen de Frame (voorbeeldwaarden)
-        # Deze offsets bepalen hoeveel pixels de frame om de foto heen zit.
-        # Een echte polaroid frame heeft een grotere offset aan de onderkant.
-        self.frame_padding_top = int((29 + 18)/factor) # Shadow
-        self.frame_padding_sides = int((26 + 18)/factor) # Shadow
-        self.frame_padding_bottom = int((110)/factor) # Extra marge voor de onderkant
+        self.photo_width = int(size)
+        self.photo_height = int(size)
+        self.factor = float(size/448) # 448 is original photo width/height
+
+        self.frame_padding_top = int((130) * self.factor)
+        self.frame_padding_sides = int((153) * self.factor)
+        self.frame_padding_bottom = int((350) * self.factor)
         
-        self.photo_width = int(380/factor)
-        self.photo_height = int(395/factor)
-
-        # 1. Component 1: De daadwerkelijke Foto (resizen we naar de gewenste grootte)
+        # PHOTO
         self.photo = GLImage(photo_path, position=(0, 0))
         
-        # We laden en resizen de photo surface
+        # Load and resize photo
         if self.photo.image_surface:
             self.photo.image_surface = ImageUtils.resize_and_crop_to_fit(
                 self.photo.image_surface, 
@@ -50,14 +48,14 @@ class GLPolaroid:
 
             self.photo.update_texture() # Update de GPU met de nieuwe, geschaalde textuur
 
-        # 2. Component 2: De Frame (moet doorzichtig zijn en over de foto heen passen)
-        # De totale frame afmeting is de foto + alle padding
-        frame_width = self.photo_width + 2 * self.frame_padding_sides
-        frame_height = self.photo_height + self.frame_padding_top + self.frame_padding_bottom
+        
+        # FRAME
+        frame_width = (self.frame_padding_sides * 2 + self.photo_width)
+        frame_height = (self.frame_padding_top + self.frame_padding_bottom + self.photo_height)
         
         self.frame = GLImage(frame_path, position=(0, 0))
         
-        # Schaal de frame zodat deze om de geschaalde foto past.
+        # Scale frame to fit photo
         if self.frame.image_surface:
             self.frame.image_surface = pygame.transform.scale(
                 self.frame.image_surface, (frame_width, frame_height)
@@ -69,40 +67,38 @@ class GLPolaroid:
 
     def set_position(self, position, screen_width, screen_height, aspect_ratio):
         """
-        Stelt de positie in van de HELE Polaroid (dit is de positie van de FRAME).
-        De positie van de foto wordt afgeleid van de frame-positie en padding.
+        Set the position of the polaroid.
         """
         self.position = position
 
-        # Bepaal de startpositie van de frame (deze komt op de opgegeven positie)
+        # Determine frame position
         frame_x = position[0]
         frame_y = position[1]
         
-        # Bepaal de startpositie van de foto (ingesprongen binnen de frame)
+        # Determine photo position to be placed exactly in the center of the frame
         photo_x = frame_x + self.frame_padding_sides
         photo_y = frame_y + self.frame_padding_top
 
-        # --- BEREKENING VAN HET ROTATIECENTRUM (NIEUW) ---
-        # De afmetingen van de frame zijn nodig om het midden te vinden
+        # Size of the frame are required to define center of polaroid
         if self.frame.image_surface:
             frame_w, frame_h = self.frame.image_surface.get_size()
             
-            # Het midden van de frame in PIXEL-coördinaten
+            # Determine center of polaroid in PIXEL-coördinates
             self.center_pixel_x = frame_x + (frame_w // 2)
             self.center_pixel_y = frame_y + (frame_h // 2)
 
-        # 2. Update de Foto en Frame positie (blijft hetzelfde)
+        # Update the photo and frame position
         self.photo.set_position((photo_x, photo_y), screen_width, screen_height, aspect_ratio)
         self.frame.set_position((frame_x, frame_y), screen_width, screen_height, aspect_ratio)
 
     def set_rotation(self, angle):
-        """Stelt de rotatiehoek in (in graden)."""
+        """Set the rotation angle of the polaroid."""
         self.rotation_angle = angle
 
     def draw(self):
         """
-        Tekent de foto EERST, daarna de frame (zodat de frame er overheen valt).
-        Past rotatie toe met matrix transformaties.
+        Draws frame first, then photo on top.
+        Rotates the polaroid around the center of the frame.
         """
         # Rotatie wordt toegepast op de Modelview matrix, die in MainScreen al is gereset (glLoadIdentity)
         glPushMatrix() 
@@ -115,11 +111,11 @@ class GLPolaroid:
             glRotatef(self.rotation_angle, 0.0, 0.0, 1.0)
             glTranslatef(-gl_center_x, -gl_center_y, 0.0)
             
-        # 4a. Teken de foto
-        self.photo.draw()
-        
-        # 4b. Teken de frame er overheen
+        # Draw frame first
         self.frame.draw()
+
+        # Draw photo on top
+        self.photo.draw()
         
         # Herstel de Modelview matrix (alles wat hierna getekend wordt, roteert niet mee)
         glPopMatrix()

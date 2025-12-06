@@ -13,6 +13,9 @@ from ui.gl_polaroid import GLPolaroid
 from ui.gl_text_label import GLTextLabel
 from utils.image_utils import ImageUtils
 from .screen_interface import ScreenInterface
+from utils.logger import get_logger
+
+logger = get_logger("MainScreen")
 
 
 class MainScreen(ScreenInterface):
@@ -23,18 +26,18 @@ class MainScreen(ScreenInterface):
         self.sizing_factor = width / 1280 # Basis voor schaling van UI elementen
         self.aspect_ratio = width / height
 
-        # --- INSTANTIE VAN BACKGROUND ---
-        self.background_image = GLImage(image_path="assets/images/background.png", position=(0, 0)) 
+        # --- INSTANCE OF BACKGROUND ---
+        self.background_image = GLImage(image_path="assets/images/background-image.png", position=(0, 0)) 
         self.background_image.resize(self.width, self.height)
         self.background_image.set_position((0, 0), self.width, self.height, self.aspect_ratio)
         
-        # --- INSTANTIE VAN TEXT LABEL ---
-        self.fps_label = GLTextLabel(initial_text="Starten...", font=FONT_MONO, color=(0, 0, 0))
+        # --- INSTANCE OF TEXT LABEL ---
+        self.fps_label = GLTextLabel(initial_text="Starting...", font=FONT_MONO, color=(0, 0, 0))
         self.fps_label.set_position((10, 10), self.width, self.height, self.aspect_ratio)
 
-        # --- INSTANTIE VAN POLAROIDS ---
+        # --- INSTANCE OF POLAROIDS ---
         self.orbit_angle = 0.0          # Start hoek in graden
-        self.orbit_speed = 5.0         # Baansnelheid (Graden/seconde)
+        self.orbit_speed = 1.0         # Baansnelheid (Graden/seconde)
         NUM_POLAROIDS = 20
         self.polaroids = []
         self.angle_offset_step = 360.0 / NUM_POLAROIDS # De hoek tussen elke polaroid (360 graden / aantal)
@@ -44,10 +47,8 @@ class MainScreen(ScreenInterface):
         self.orbit_radius = 1400         # Straal van de baan (R)
 
         for i in range(NUM_POLAROIDS):
-            polaroid = GLPolaroid(
-                photo_path="assets/images/party-pic.png", 
-                frame_path="assets/images/polaroid_texture.png"
-            )
+            picture_number = i % 5
+            polaroid = GLPolaroid(photo_path=f"assets/images/party-pic-{picture_number + 1}.png", size=300)
             # Voeg een unieke eigenschap toe om de hoekoffset op te slaan
             polaroid.angle_offset = i * self.angle_offset_step
             polaroid.rotation_offset = random.randint(-10, 10) # Kleine random variatie
@@ -57,23 +58,35 @@ class MainScreen(ScreenInterface):
             polaroid.set_rotation(angle=0) 
             self.polaroids.append(polaroid)
 
-        # --- INSTANTIE VAN START BUTTON ---
-        self.button = GLImage(image_path="assets/images/start_button.png", position=(0, 0)) 
-        self.button.resize(
-            int(self.button.image_rect.width * self.sizing_factor * 0.75), 
-            int(self.button.image_rect.height * self.sizing_factor * 0.75)
+        # --- INSTANTIE VAN PRESS-TO-START ---
+        self.button_press_to_start = GLImage(
+            image_path="assets/images/button_press-to-start.png", 
+            position=(0,0)
         )
-        self.button.set_position(
+        self.button_press_to_start.set_position(
             (
-                int((self.width / 2) - (self.button.image_rect.width / 2)), 
-                int((self.height / 1.3) - (self.button.image_rect.height / 2))
+                int((self.width / 2) - (self.button_press_to_start.image_rect.width / 2)), 
+                int((self.height - 400) * self.sizing_factor)
             ), 
             self.width, 
             self.height, 
             self.aspect_ratio
         )
 
-        # self.setup_opengl_2d() # Moved to on_enter
+        # --- INSTANTIE VAN START BUTTON ---
+        self.button_take_photo = GLImage(
+            image_path="assets/images/button_take-photo.png", 
+            position=(0,0)
+        )
+        self.button_take_photo.set_position(
+            (
+                int((self.width / 2) - (self.button_take_photo.image_rect.width / 2)), 
+                int((self.height - 300) * self.sizing_factor)
+            ), 
+            self.width, 
+            self.height, 
+            self.aspect_ratio
+        )
 
 
     def setup_opengl_2d(self):
@@ -101,7 +114,7 @@ class MainScreen(ScreenInterface):
     def handle_event(self, event, switch_screen_callback):
         # Reageer op een muisklik (of touch-tap, wat vaak als mouse click wordt gezien)
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-            print("Scherm aangeraakt! Start procedure...")
+            logger.info("Screen touched! Starting procedure...")
             
             # Call callback with screen name
             switch_screen_callback('countdown')
@@ -197,25 +210,29 @@ class MainScreen(ScreenInterface):
             polaroid.draw()
 
         self.fps_label.draw()
-        self.button.draw()
+        self.button_press_to_start.draw()
+        self.button_take_photo.draw()
         
         # 4. Swap Buffers
         pygame.display.flip()
 
 
     def on_enter(self, **context_data):
-        print("Entering MainScreen.")
+        logger.info("Entering MainScreen.")
         if "message" in context_data:
-            print(f"Status: {context_data['message']}")
+            logger.info(f"Status: {context_data['message']}")
         
         # Restore the OpenGL state for this screen
         self.setup_opengl_2d()
 
     def on_exit(self):
-        print("Exiting MainScreen.")
+        logger.info("Exiting MainScreen.")
+        # Ruim de label op
         # Ruim de label op
         self.background_image.cleanup()
         for polaroid in self.polaroids:
             polaroid.cleanup()
         self.fps_label.cleanup()
+        self.button_press_to_start.cleanup()
+        self.button_take_photo.cleanup()
         

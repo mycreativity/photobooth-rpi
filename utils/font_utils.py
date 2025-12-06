@@ -1,4 +1,7 @@
 import pygame
+from utils.logger import get_logger
+
+logger = get_logger("FontUtils")
 
 
 class FontUtils:
@@ -11,6 +14,6 @@ class FontUtils:
         try:
             font = pygame.font.Font(font_path, font_size)
         except Exception as e:
-            print(f"Waarschuwing: Kan font op pad '{font_path}' niet laden. Gebruik standaard font. Fout: {e}")
+            logger.warn(f"Waarschuwing: Kan font op pad '{font_path}' niet laden. Gebruik standaard font. Fout: {e}")
             font = pygame.font.Font(None, font_size) # Fallback naar standaard
         return font

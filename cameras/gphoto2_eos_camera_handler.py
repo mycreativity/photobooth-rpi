@@ -7,6 +7,11 @@ from PIL import Image
 
 from .camera_interface import CameraInterface
 
+from .camera_interface import CameraInterface
+from utils.logger import get_logger
+
+logger = get_logger("GPhoto2Handler")
+
 class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
     """
     Handler for gphoto2 communication (Live View, photos)
@@ -47,9 +52,9 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
                 self.config, 'model')
         if OK >= gp.GP_OK:
             self.camera_model = camera_model.get_value()
-            print('Camera model:', self.camera_model)
+            logger.info(f'Camera model: {self.camera_model}')
         else:
-            print('No camera model info')
+            logger.warn('No camera model info')
             self.camera_model = ''
             
         # Old logic for 350D/unknown models (not relevant for 750D, but adapted from focus-gui.py)
@@ -65,7 +70,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
             try:
                 gp.gp_camera_capture_preview(self.camera)
             except gp.GPhoto2Error as e:
-                print(f"Warning: Cannot start preview. Error: {e}")
+                logger.warn(f"Warning: Cannot start preview. Error: {e}")
 
     def _initialize_camera(self):
         """Attempts to initialize the camera, handling PTPCamera conflicts."""
@@ -73,25 +78,25 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         for attempt in range(max_retries):
             try:
                 self.camera.init()
-                print("Camera initialized successfully.")
+                logger.info("Camera initialized successfully.")
                 return
             except gp.GPhoto2Error as e:
-                print(f"Camera init failed (Attempt {attempt + 1}/{max_retries}): {e}")
+                logger.warn(f"Camera init failed (Attempt {attempt + 1}/{max_retries}): {e}")
                 if "-53" in str(e):
-                    print("Error -53 detected. Attempting to kill PTPCamera...")
+                    logger.warn("Error -53 detected. Attempting to kill PTPCamera...")
                     try:
                         subprocess.run(["killall", "PTPCamera"], capture_output=True)
                         time.sleep(1) # Wait for process to die
                     except Exception as kille:
-                        print(f"Failed to kill PTPCamera: {kille}")
+                        logger.error(f"Failed to kill PTPCamera: {kille}")
                 elif "-105" in str(e):
-                     print("Error -105 (Unknown model). Camera might be off or disconnected.")
+                     logger.warn("Error -105 (Unknown model). Camera might be off or disconnected.")
                 
                 if attempt < max_retries - 1:
-                    print("Retrying in 2 seconds...")
+                    logger.info("Retrying in 2 seconds...")
                     time.sleep(2)
                 else:
-                    print("CRITICAL: Could not initialize camera after multiple attempts.")
+                    logger.fatal("CRITICAL: Could not initialize camera after multiple attempts.", exc_info=True)
                     raise e
 
     # The 'run' method is automatically called when thread.start() is used
@@ -150,7 +155,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         Returns the PIL Image.
         """
         if self.running:
-            print("Kan geen one-shot doen: continuous mode is actief.")
+            logger.warn("Cannot do one-shot: continuous mode is active.")
             return None
             
         if not self._set_config():
@@ -164,7 +169,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         Returns the PIL Image.
         """
         if self.running:
-            print("Kan geen foto maken: continuous mode is actief.")
+            logger.warn("Cannot take photo: continuous mode is active.")
             return None
         
         self._reset_config()
@@ -179,7 +184,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         if self.is_alive():
             self.join(timeout=2.0) # Wait max 2 seconds
             if self.is_alive():
-                 print("GPhoto2Handler: Thread did not exit in time.")
+                 logger.warn("Thread did not exit in time.")
         
         self._reset_config()
         self.camera.exit()
@@ -192,7 +197,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
             _, camera_file = gp.gp_camera_capture_preview(self.camera)
             return self._send_file(camera_file)
         except gp.GPhoto2Error as e:
-             print(f'Error requesting preview: {e}')
+             logger.error(f'Error requesting preview: {e}')
              # Turn off Live View on error
              self.live_view_active = False
              return None
@@ -207,7 +212,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
                 gp.GP_FILE_TYPE_NORMAL)
             return self._send_file(camera_file)
         except gp.GPhoto2Error as e:
-            print(f'Fout bij maken van foto: {e}')
+            logger.error(f'Error taking photo: {e}')
             return None
 
     def _send_file(self, camera_file):
@@ -240,7 +245,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         if OK >= gp.GP_OK:
             value = image_format.get_value()
             if 'raw' in value.lower():
-                print('Cannot preview RAW images')
+                logger.warn('Cannot preview RAW images')
                 return False
         return True
 

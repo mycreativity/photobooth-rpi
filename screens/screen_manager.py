@@ -1,4 +1,7 @@
 from .screen_interface import ScreenInterface
+from utils.logger import get_logger
+
+logger = get_logger("ScreenManager")
 
 class ScreenManager:
     """Manages the application's current screen state."""
@@ -21,7 +24,7 @@ class ScreenManager:
     def switch_to(self, screen_name: str, **context_data):
         """Switches the current screen by name, calling on_exit and on_enter."""
         if screen_name not in self.screens:
-            print(f"Error: Screen '{screen_name}' not found.")
+            logger.error(f"Error: Screen '{screen_name}' not found.")
             return
 
         if self.current_screen:

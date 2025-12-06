@@ -1,6 +1,5 @@
 import sys
 import pygame
-import pygame
 import faulthandler
 # Import OpenGL necessary for setting up the context
 from OpenGL.GL import *
@@ -8,6 +7,9 @@ from OpenGL.GLU import *
 from screens.countdown_screen import CountdownScreen
 from screens.screen_manager import ScreenManager
 from screens.main_screen import MainScreen
+from utils.logger import get_logger
+
+logger = get_logger("Main")
 
 # Enable traceback dump on segmentation fault
 faulthandler.enable()
@@ -21,7 +23,7 @@ def init_gl(width, height):
     # # Set the viewport to cover the entire window
     # if (width == 1280 and height == 800):
     #     glViewport(0, 0, width, height)
-    print (f"Initializing OpenGL viewport to {width}x{height}...")
+    logger.info(f"Initializing OpenGL viewport to {width}x{height}...")
     # Set the Projection and Modelview modes
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -55,6 +57,8 @@ def main():
     
     # Optional: If you want a window that doesn't fill the entire screen,
     # you can hardcode e.g. screen_width = 1280 here as fallback.
+    screen_width = 1280
+    screen_height = 800
 
     # Set flags
     # pygame.FULLSCREEN is added so the screen is filled borderless.
@@ -70,7 +74,7 @@ def main():
     # Initialize base OpenGL settings using the detected size
     init_gl(screen_width, screen_height)
 
-    print(f"Starting {APP_TITLE} (Detected: {screen_width}x{screen_height})...")
+    logger.info(f"Starting {APP_TITLE} (Detected: {screen_width}x{screen_height})...")
 
     # 2. Show Loading Screen (Before Camera Init)
     try:
@@ -90,7 +94,8 @@ def main():
                     surf = pygame.transform.scale(surf, (target_w, target_h))
                 
                 w, h = surf.get_size()
-                data = pygame.image.tostring(surf, "RGBA", 1)
+                # Use False for vertical flip to keep top-left origin consistent with Pygame
+                data = pygame.image.tostring(surf, "RGBA", False)
                 
                 tex_id = glGenTextures(1)
                 glBindTexture(GL_TEXTURE_2D, tex_id)
@@ -99,18 +104,27 @@ def main():
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
                 
                 glEnable(GL_TEXTURE_2D)
+                
+                # Enable Blending for transparency
+                glEnable(GL_BLEND)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+                
                 glColor3f(1, 1, 1)
                 
                 glBegin(GL_QUADS)
+                # Map texture coordinates to match Pygame's Top-Left origin
+                # (0,0) in texture is now Top-Left of image because we didn't flip in tostring
                 glTexCoord2f(0, 0); glVertex2f(x, y)
                 glTexCoord2f(1, 0); glVertex2f(x + w, y)
                 glTexCoord2f(1, 1); glVertex2f(x + w, y + h)
                 glTexCoord2f(0, 1); glVertex2f(x, y + h)
                 glEnd()
                 
+                glDisable(GL_BLEND) # Disable after drawing
+                
                 glDeleteTextures([tex_id])
             except Exception as e:
-                print(f"Loading screen error ({path}): {e}")
+                logger.error(f"Loading screen error ({path}): {e}", exc_info=True)
 
         # Draw Background
         draw_temp_texture("assets/images/background-loading.png", 0, 0, screen_width, screen_height)
@@ -129,7 +143,7 @@ def main():
         pygame.event.pump()
         
     except Exception as e:
-        print(f"Warning: Could not show loading screen: {e}")
+        logger.warn(f"Warning: Could not show loading screen: {e}")
 
     # 3. Initialize Camera
     # Choose your camera handler here
@@ -158,7 +172,7 @@ def main():
         manager.set_initial_screen('main')
         
     except Exception as e:
-        print(f"Error initializing screens: {e}")
+        logger.fatal(f"Error initializing screens: {e}", exc_info=True)
         sys.exit(1)
 
     # 5. Main Game Loop
@@ -180,10 +194,10 @@ def main():
         manager.draw(screen) 
         
     # 6. Cleanup
-    print("Application closing...")
+    logger.info("Application closing...")
     manager.exit()
     if camera:
-        print("Shutting down camera...")
+        logger.info("Shutting down camera...")
         camera.shut_down()
     pygame.quit()
     sys.exit(0)

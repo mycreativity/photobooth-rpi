@@ -9,6 +9,9 @@ import pygame.font # Ensure font is imported
 
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
+from utils.logger import get_logger
+
+logger = get_logger("CountdownScreen")
 
 
 class CountdownScreen():
@@ -222,7 +225,8 @@ class CountdownScreen():
         pygame.display.flip()
         
     def on_exit(self):
-        print("Exiting CountdownScreen.")
+        logger.info("Exiting CountdownScreen.")
+        # Do NOT shut down the camera thread here, as we want to reuse it.
         # Do NOT shut down the camera thread here, as we want to reuse it.
         # Just stop the continuous capture (Live View) to save resources if needed.
         # However, for instant switching, we might want to keep it running.
@@ -252,8 +256,9 @@ class CountdownScreen():
         # Try to initialize camera if not done yet
         if not self.setup_complete:
             initial_frame = self.camera_handler.get_latest_image()
+            initial_frame = self.camera_handler.get_latest_image()
             if initial_frame:
-                print("Camera frame received! Initializing OpenGL texture...")
+                logger.info("Camera frame received! Initializing OpenGL texture...")
                 self.cam_width, self.cam_height = initial_frame.size
                 self.cam_aspect_ratio = self.cam_width / self.cam_height
                 
@@ -267,7 +272,8 @@ class CountdownScreen():
 
 
     def on_enter(self, **context_data):
-        print("Entering CountdownScreen.")
+        logger.info("Entering CountdownScreen.")
+        # Ensure camera is running
         # Ensure camera is running
         self.camera_handler.start_continuous()
         
