@@ -145,8 +145,8 @@ class MainScreen(ScreenInterface):
             frame_w = polaroid.frame.image_rect.width
             frame_h = polaroid.frame.image_rect.height
             
-            polaroid_top_left_x = int(new_center_x - (frame_w // 2))
-            polaroid_top_left_y = int(new_center_y - (frame_h // 2))
+            polaroid_top_left_x = new_center_x - (frame_w / 2)
+            polaroid_top_left_y = new_center_y - (frame_h / 2)
             
             # Stel de positie in
             polaroid.set_position(

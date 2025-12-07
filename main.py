@@ -43,6 +43,11 @@ def main():
     # 1. Initialize Pygame FIRST (needed to get screen info)
     pygame.init()
 
+    # Set the icon for the display window
+    icon_path = "assets/images/application-icon.png"
+    program_icon = pygame.image.load(icon_path)
+    pygame.display.set_icon(program_icon)
+
     # Configuration for OpenGL buffers
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)

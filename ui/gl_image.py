@@ -119,8 +119,13 @@ class GLImage:
             self.image_rect.topleft = position
 
             # Converteer naar OpenGL-coördinaten met behulp van de helper functie
-            self.gl_left, self.gl_right, self.gl_top, self.gl_bottom = GLUtils.pixel_to_gl(
-                self.image_rect, 
+            # Converteer naar OpenGL-coördinaten met behulp van de helper functie
+            # Gebruik self.position (floats) en rect afmetingen
+            self.gl_left, self.gl_right, self.gl_top, self.gl_bottom = GLUtils.pixel_values_to_gl(
+                self.position[0],
+                self.position[1],
+                self.image_rect.width,
+                self.image_rect.height,
                 screen_width,
                 screen_height,
                 aspect_ratio
