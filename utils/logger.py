@@ -85,8 +85,8 @@ class Logger:
             with open(filename, "a", encoding="utf-8") as f:
                 f.write(json_entry + "\n")
                 
-            # Also print to console for dev visibility (optional but good for now)
-            # print(f"[{level}] {message}") 
+            # Also print to console for dev visibility
+            print(f"[{level}] {message}") 
             
         except Exception as e:
             # Fallback if logging fails

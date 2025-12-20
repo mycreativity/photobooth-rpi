@@ -64,8 +64,14 @@ class WebcamCameraHandler(CameraInterface, threading.Thread):
         if self.camera is None or not self.camera.isOpened():
             self.camera = cv2.VideoCapture(self.camera_index)
             # Optional: Set resolution
-            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            # Set FourCC to MJPG
+            # This is critical for high resolution on many USB webcams
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            self.camera.set(cv2.CAP_PROP_FOURCC, fourcc)
+            
+            # Set resolution to 1080p
+            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
             
             if not self.camera.isOpened():
                 logger.error(f"Could not open camera index {self.camera_index}")

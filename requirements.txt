@@ -1,4 +1,4 @@
-pygame>=2.6.1
+pygame-ce>=2.5.0
 PyOpenGL>=3.1.0
 PyOpenGL-accelerate>=3.1.0
 gphoto2>=2.5.0
