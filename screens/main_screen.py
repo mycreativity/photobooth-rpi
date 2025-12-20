@@ -46,7 +46,7 @@ class MainScreen(ScreenInterface):
 
         for i in range(NUM_POLAROIDS):
             picture_number = i % 5
-            polaroid = GPUPolaroid(renderer, photo_path=f"assets/images/party-pic-{picture_number + 1}.png", size=300)
+            polaroid = GPUPolaroid(renderer, photo_path=f"assets/images/party-pic-{picture_number + 1}.png", size=300 * self.sizing_factor)
             polaroid.angle_offset = i * self.angle_offset_step
             polaroid.rotation_offset = random.randint(-10, 10) 
             
@@ -60,6 +60,11 @@ class MainScreen(ScreenInterface):
             image_path="assets/images/button_press-to-start.png", 
             position=(0,0)
         )
+        # Scale to screen size
+        if self.button_press_to_start.image_rect:
+             orig_w = self.button_press_to_start.image_rect.width
+             orig_h = self.button_press_to_start.image_rect.height
+             self.button_press_to_start.resize(int(orig_w * self.sizing_factor), int(orig_h * self.sizing_factor)) 
         # Position: Center X, Vertical Center 2/5 from bottom
         pts_layout_y_center = self.height * 0.6 # 60% down is 40% (2/5) from bottom
         pts_half_h = self.button_press_to_start.image_rect.height / 2
@@ -78,6 +83,19 @@ class MainScreen(ScreenInterface):
             image_path="assets/images/button_take-photo.png", 
             position=(0,0)
         )
+        # Scale to screen size. Base image is approx 420x420? Let's check or assume relative scale.
+        # Ideally we read original size or just resize based on ratio
+        if self.button_take_photo.image_rect:
+             orig_w = self.button_take_photo.image_rect.width
+             orig_h = self.button_take_photo.image_rect.height
+             # We want to maintain aspect ratio but scale by sizing_factor?
+             # sizing_factor is width/1280. 
+             # If we want to keep it same relative size, we multiply dimensions by it.
+             # Wait, if we load it fresh, it is 100%. If sizing_factor is 1.2 (larger screen), we scale up.
+             # If sizing factor is 0.8 (smaller screen), we scale down.
+             # BUT: The GPUImage might have ALREADY loaded it at full res.
+             # We should probably reload or just scale current.
+             self.button_take_photo.resize(int(orig_w * self.sizing_factor), int(orig_h * self.sizing_factor)) 
         # Position: Center X, Vertical Center 1/5 from bottom
         btn_layout_y_center = self.height * 0.8 # 80% down is 20% (1/5) from bottom
         btn_half_h = self.button_take_photo.image_rect.height / 2
@@ -98,6 +116,10 @@ class MainScreen(ScreenInterface):
             position=(self.width - 60, 20),
             size=(40, 40)
         )
+        # Scale to screen size (Ratio based on 1280x800)
+        # 40x40 is base size for icon
+        new_size = int(40 * self.sizing_factor)
+        self.settings_btn.resize(new_size, new_size) 
         self.settings_btn.bg_color = None # Transparent
 
     def handle_event(self, event, switch_screen_callback):
