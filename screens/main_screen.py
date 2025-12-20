@@ -79,8 +79,24 @@ class MainScreen(ScreenInterface):
                 int((self.height - 300) * self.sizing_factor)
             )
         )
+        
+        # --- INSTANCE OF SETTINGS BUTTON ---
+        from ui.gpu_button import GPUButton
+        self.settings_btn = GPUButton(
+            renderer,
+            image_path="assets/images/icon-settings.png",
+            position=(self.width - 60, 20),
+            size=(40, 40)
+        )
+        self.settings_btn.bg_color = None # Transparent
 
     def handle_event(self, event, switch_screen_callback):
+        # Handle Settings Click
+        if self.settings_btn.is_clicked(event):
+            logger.info("Go to Settings")
+            switch_screen_callback('settings')
+            return
+
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
             logger.info("Screen touched! Starting procedure...")
             switch_screen_callback('countdown')
@@ -170,6 +186,7 @@ class MainScreen(ScreenInterface):
         self.fps_label.draw()
         self.button_press_to_start.draw()
         self.button_take_photo.draw()
+        self.settings_btn.draw()
         
         # 3. Present (Handled by main loop typically, but if manager calls draw, it might expect us to just draw)
         # Main loop calls pygame.display.flip() or renderer.present()? 

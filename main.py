@@ -6,8 +6,10 @@ from pygame._sdl2 import Window, Renderer, Texture
 from screens.countdown_screen import CountdownScreen
 from screens.screen_manager import ScreenManager
 from screens.main_screen import MainScreen
+from screens.settings_screen import SettingsScreen
 from ui.gpu_image import GPUImage
 from utils.logger import get_logger
+from utils.settings_manager import SettingsManager
 
 logger = get_logger("Main")
 
@@ -18,10 +20,64 @@ faulthandler.enable()
 APP_TITLE = "Loomo Photobooth"
 FPS = 60
 
+# Global State for dynamic reconfiguration
+camera = None
+countdown_screen = None
+manager = None
+settings_manager = None
+renderer = None
+screen_width = 0
+screen_height = 0
+
+def init_camera():
+    """Initializes the camera based on settings."""
+    global camera, settings_manager
+    
+    cam_type = settings_manager.get("camera_type", "webcam")
+    logger.info(f"Initializing camera type: {cam_type}")
+    
+    # Teardown existing
+    if camera:
+        try:
+            camera.shut_down()
+        except:
+             pass
+             
+    if cam_type == "webcam":
+        from cameras.webcam_camera_handler import WebcamCameraHandler
+        camera = WebcamCameraHandler(camera_index=0)
+    elif cam_type == "dslr":
+        try:
+            from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
+            camera = GPhoto2EOSCameraHandler()
+        except ImportError:
+            logger.error("GPhoto2 handler not found or dependencies missing.")
+            # Fallback
+            from cameras.webcam_camera_handler import WebcamCameraHandler
+            camera = WebcamCameraHandler(camera_index=0)
+    else:
+        logger.warn(f"Unknown camera type {cam_type}, defaulting to webcam.")
+        from cameras.webcam_camera_handler import WebcamCameraHandler
+        camera = WebcamCameraHandler(camera_index=0)
+
+    # Start
+    camera.start_continuous()
+    return camera
+
+def apply_settings_callback():
+    """Called when settings are saved. Re-initializes components."""
+    logger.info("Applying new settings...")
+    new_cam = init_camera()
+    
+    # Update CountdownScreen with new camera
+    if countdown_screen:
+        countdown_screen.camera_handler = new_cam
+        # Trigger any specific camera update logic if needed
+        logger.info("CountdownScreen: Camera handler updated.")
+
 def main():
-    """
-    Main entry point using SDL2 Renderer.
-    """
+    global camera, countdown_screen, manager, settings_manager, renderer, screen_width, screen_height
+
     # 1. Initialize Pygame
     pygame.init()
 
@@ -43,7 +99,6 @@ def main():
     window.focus()
     
     # Create Renderer (Hardware Accelerated)
-    # vsync=True prevents tearing and caps FPS to refresh rate
     renderer = Renderer(window, vsync=True)
     
     logger.info("Renderer created. Showing loading screen...")
@@ -81,33 +136,33 @@ def main():
             pass
 
         renderer.present()
-        
-        # Pump events to show window
         pygame.event.pump()
         
     except Exception as e:
         logger.warn(f"Warning: Could not show loading screen: {e}")
 
-    # 4. Initialize Camera
-    from cameras.webcam_camera_handler import WebcamCameraHandler
-    # from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
-    
-    camera = WebcamCameraHandler(camera_index=0)
-    # camera = GPhoto2EOSCameraHandler()
-    
-    camera.start_continuous()
+    # 4. Initialize Settings
+    settings_manager = SettingsManager("settings.json")
 
-    # 5. Initialize Screens & Manager
+    # 5. Initialize Camera
+    init_camera()
+
+    # 6. Initialize Screens & Manager
     try:
         manager = ScreenManager()
         
         # Create screen instances - PASS RENDERER
         main_screen = MainScreen(renderer, screen_width, screen_height)
+        # MainScreen needs to know about SettingsScreen to show the button? 
+        # Actually MainScreen logic is inside MainScreen class. We just need to add the button there.
+        
         countdown_screen = CountdownScreen(renderer, screen_width, screen_height, camera)
+        settings_screen = SettingsScreen(renderer, screen_width, screen_height, settings_manager, apply_settings_callback)
         
         # Register screens
         manager.add_screen('main', main_screen)
         manager.add_screen('countdown', countdown_screen)
+        manager.add_screen('settings', settings_screen)
         
         # Set initial screen
         manager.set_initial_screen('main')
@@ -116,7 +171,7 @@ def main():
         logger.fatal(f"Error initializing screens: {e}", exc_info=True)
         sys.exit(1)
 
-    # 6. Main Game Loop
+    # 7. Main Game Loop
     clock = pygame.time.Clock()
     running = True
     
@@ -141,7 +196,7 @@ def main():
         # Present the frame
         renderer.present()
         
-    # 7. Cleanup
+    # 8. Cleanup
     logger.info("Application closing...")
     manager.exit()
     if camera:
