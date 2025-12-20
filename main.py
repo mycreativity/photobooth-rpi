@@ -64,31 +64,76 @@ def init_camera():
     camera.start_continuous()
     return camera
 
+def parse_resolution(res_str):
+    try:
+        w, h = map(int, res_str.split('x'))
+        return w, h
+    except:
+        return 1280, 800
+
+def init_screens(renderer, width, height, camera, settings_mgr, cb):
+    """Initializes and registers all screens."""
+    mgr = ScreenManager()
+    
+    main_screen = MainScreen(renderer, width, height)
+    countdown_screen = CountdownScreen(renderer, width, height, camera)
+    settings_screen = SettingsScreen(renderer, width, height, settings_mgr, cb)
+    
+    mgr.add_screen('main', main_screen)
+    mgr.add_screen('countdown', countdown_screen)
+    mgr.add_screen('settings', settings_screen)
+    
+    mgr.set_initial_screen('main')
+    return mgr
+
 def apply_settings_callback():
     """Called when settings are saved. Re-initializes components."""
-    logger.info("Applying new settings...")
-    new_cam = init_camera()
+    global camera, manager, renderer, screen_width, screen_height, settings_manager, window
     
-    # Update CountdownScreen with new camera
-    if countdown_screen:
-        countdown_screen.camera_handler = new_cam
-        # Trigger any specific camera update logic if needed
-        logger.info("CountdownScreen: Camera handler updated.")
+    logger.info("Applying new settings...")
+    
+    # 1. Update Camera
+    camera = init_camera()
+    
+    # 2. Update Resolution
+    new_res_str = settings_manager.get("screen_size", "1280x800")
+    new_w, new_h = parse_resolution(new_res_str)
+    
+    res_changed = (new_w != screen_width or new_h != screen_height)
+    
+    if res_changed:
+        logger.info(f"Resolution changed to {new_w}x{new_h}. Resizing window...")
+        screen_width = new_w
+        screen_height = new_h
+        
+        # Resize/Recreate Window
+        # In SDL2, setting size works.
+        try:
+             window.size = (screen_width, screen_height)
+             window.position = (pygame.WINDOWPOS_CENTERED, pygame.WINDOWPOS_CENTERED)
+             # Note: Renderer is attached to window, usually follows size automatically.
+        except Exception as e:
+             logger.error(f"Failed to resize window: {e}")
+             
+    # 3. Re-init Screens (Layout depends on W/H)
+    logger.info("Recreating screen layouts...")
+    try:
+        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, apply_settings_callback)
+    except Exception as e:
+        logger.error(f"Failed to re-init screens: {e}")
 
 def main():
-    global camera, countdown_screen, manager, settings_manager, renderer, screen_width, screen_height
+    global camera, manager, settings_manager, renderer, screen_width, screen_height, window
 
     # 1. Initialize Pygame
     pygame.init()
 
-    # Detect screen size
-    info_object = pygame.display.Info()
-    screen_width = info_object.current_w
-    screen_height = info_object.current_h
+    # 4. Initialize Settings (Early load to get resolution)
+    settings_manager = SettingsManager("settings.json")
     
-    # Optional hardcode fallback
-    screen_width = 1280
-    screen_height = 800
+    # Detect / Load Resolution
+    res_str = settings_manager.get("screen_size", "1280x800")
+    screen_width, screen_height = parse_resolution(res_str)
 
     # 2. Setup Window and Renderer
     logger.info(f"Initializing SDL2 Window and Renderer ({screen_width}x{screen_height})...")
@@ -119,7 +164,6 @@ def main():
         for _ in range(10):
             pygame.event.pump()
             pygame.time.delay(10) # Small delay to let OS process window creation
-
         
         # Load Logo
         try:
@@ -141,31 +185,13 @@ def main():
     except Exception as e:
         logger.warn(f"Warning: Could not show loading screen: {e}")
 
-    # 4. Initialize Settings
-    settings_manager = SettingsManager("settings.json")
 
     # 5. Initialize Camera
     init_camera()
 
     # 6. Initialize Screens & Manager
     try:
-        manager = ScreenManager()
-        
-        # Create screen instances - PASS RENDERER
-        main_screen = MainScreen(renderer, screen_width, screen_height)
-        # MainScreen needs to know about SettingsScreen to show the button? 
-        # Actually MainScreen logic is inside MainScreen class. We just need to add the button there.
-        
-        countdown_screen = CountdownScreen(renderer, screen_width, screen_height, camera)
-        settings_screen = SettingsScreen(renderer, screen_width, screen_height, settings_manager, apply_settings_callback)
-        
-        # Register screens
-        manager.add_screen('main', main_screen)
-        manager.add_screen('countdown', countdown_screen)
-        manager.add_screen('settings', settings_screen)
-        
-        # Set initial screen
-        manager.set_initial_screen('main')
+        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, apply_settings_callback)
         
     except Exception as e:
         logger.fatal(f"Error initializing screens: {e}", exc_info=True)

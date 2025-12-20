@@ -42,6 +42,20 @@ class SettingsScreen(ScreenInterface):
             font=self.font
         )
         
+        # Resolution Selector
+        self.res_label = GPUButton(renderer, text="Resolution:", position=(100, 220), font=self.font, color=(0,0,0))
+        self.res_label.bg_color = None
+        
+        current_res = self.settings.get("screen_size", "1280x800")
+        self.res_selector = GPUSelector(
+            renderer,
+            options=["1280x800", "1024x600"],
+            selected_value=current_res,
+            position=(300, 210),
+            width=200,
+            font=self.font
+        )
+        
         # Apply Button
         self.apply_btn = GPUButton(
             renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255)
@@ -61,9 +75,20 @@ class SettingsScreen(ScreenInterface):
         self.back_btn.set_position((350, 300))
 
     def handle_event(self, event, switch_screen_callback):
-        # Handle Selector
-        if self.camera_selector.handle_event(event):
-            return
+        # Handle Selectors (Top one first if expanded logic was complex, but click detection handles it)
+        # Check expansion to determine priority!
+        
+        # If camera selector expanded, it takes priority
+        if self.camera_selector.expanded:
+            if self.camera_selector.handle_event(event): return
+            # Consume click if outside? Nah for now simple.
+            
+        if self.res_selector.expanded:
+            if self.res_selector.handle_event(event): return
+            
+        # Normal detection
+        if self.camera_selector.handle_event(event): return
+        if self.res_selector.handle_event(event): return
 
         # Handle Buttons
         if self.back_btn.is_clicked(event):
@@ -71,12 +96,15 @@ class SettingsScreen(ScreenInterface):
             
         if self.apply_btn.is_clicked(event):
             new_cam = self.camera_selector.get_value()
+            new_res = self.res_selector.get_value()
+            
             self.settings.set("camera_type", new_cam)
+            self.settings.set("screen_size", new_res)
             self.settings.save()
             
-            logger.info(f"Saving settings: Camera={new_cam}")
+            logger.info(f"Saving settings: Camera={new_cam}, Resolution={new_res}")
             
-            # Trigger Apply Callback (re-init camera)
+            # Trigger Apply Callback (re-init camera & screen)
             if self.apply_callback:
                 self.apply_callback()
                 
@@ -95,15 +123,21 @@ class SettingsScreen(ScreenInterface):
         self.cam_label.draw()
         self.camera_selector.draw()
         
-        # Draw buttons (if menu not covering them - simplified z-order)
-        if not self.camera_selector.expanded:
+        self.res_label.draw()
+        self.res_selector.draw()
+        
+        # Draw buttons (z-order: below expanded menus)
+        is_Any_Expanded = self.camera_selector.expanded or self.res_selector.expanded
+        
+        if not is_Any_Expanded:
             self.apply_btn.draw()
             self.back_btn.draw()
         else:
-            # If expanded, draw selector last so it pops over
             self.apply_btn.draw()
             self.back_btn.draw()
-            self.camera_selector.draw() # Draw again on top? or logic needs splitting
+            # Redraw selectors on top
+            self.camera_selector.draw()
+            self.res_selector.draw()
 
     def on_enter(self, **context_data):
         # Refresh values from settings in case they changed

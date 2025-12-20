@@ -7,7 +7,8 @@ logger = get_logger("SettingsManager")
 
 DEFAULT_SETTINGS = {
     "camera_type": "webcam", # Options: 'webcam', 'dslr'
-    "camera_index": 0
+    "camera_index": 0,
+    "screen_size": "1280x800" # Options: "1280x800", "1024x600"
 }
 
 class SettingsManager:
