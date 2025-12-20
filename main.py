@@ -65,11 +65,16 @@ def init_camera():
     return camera
 
 def parse_resolution(res_str):
+    if res_str.lower() == "fullscreen":
+        # Get native display size
+        info = pygame.display.Info()
+        return info.current_w, info.current_h, True
+        
     try:
         w, h = map(int, res_str.split('x'))
-        return w, h
+        return w, h, False # False = Windowed
     except:
-        return 1280, 800
+        return 1280, 800, False
 
 def init_screens(renderer, width, height, camera, settings_mgr, cb):
     """Initializes and registers all screens."""
@@ -97,21 +102,31 @@ def apply_settings_callback():
     
     # 2. Update Resolution
     new_res_str = settings_manager.get("screen_size", "1280x800")
-    new_w, new_h = parse_resolution(new_res_str)
+    new_w, new_h, is_fullscreen = parse_resolution(new_res_str)
     
     res_changed = (new_w != screen_width or new_h != screen_height)
     
-    if res_changed:
-        logger.info(f"Resolution changed to {new_w}x{new_h}. Resizing window...")
+    if res_changed or is_fullscreen != window.fullscreen:
+        logger.info(f"Resolution changed to {new_w}x{new_h} (Fullscreen: {is_fullscreen}). Updating window...")
         screen_width = new_w
         screen_height = new_h
         
-        # Resize/Recreate Window
-        # In SDL2, setting size works.
+        # Resize Window
         try:
-             window.size = (screen_width, screen_height)
-             window.position = (pygame.WINDOWPOS_CENTERED, pygame.WINDOWPOS_CENTERED)
-             # Note: Renderer is attached to window, usually follows size automatically.
+             # Windowed -> Fullscreen
+             if is_fullscreen:
+                 window.set_fullscreen(True)
+                 # After setting fullscreen, check actual size? 
+                 # Usually matches native, which we tried to guess in parse_resolution
+             else:
+                 # Fullscreen -> Windowed
+                 # Use set_windowed to ensure decorations return
+                 window.set_windowed()
+                     
+                 window.size = (screen_width, screen_height)
+                 window.position = (pygame.WINDOWPOS_CENTERED, pygame.WINDOWPOS_CENTERED)
+                 window.focus() # Ensure focus comes back to window
+                 
         except Exception as e:
              logger.error(f"Failed to resize window: {e}")
              
@@ -133,15 +148,17 @@ def main():
     
     # Detect / Load Resolution
     res_str = settings_manager.get("screen_size", "1280x800")
-    screen_width, screen_height = parse_resolution(res_str)
+    screen_width, screen_height, is_start_fullscreen = parse_resolution(res_str)
 
     # 2. Setup Window and Renderer
-    logger.info(f"Initializing SDL2 Window and Renderer ({screen_width}x{screen_height})...")
+    logger.info(f"Initializing SDL2 Window ({screen_width}x{screen_height}, Fullscreen={is_start_fullscreen})...")
     
     # Create SDL2 Window
     window = Window(APP_TITLE, (screen_width, screen_height))
-    # window.maximize() # If handling fullscreen
-    window.focus()
+    if is_start_fullscreen:
+        window.set_fullscreen(True)
+    else:
+        window.focus()
     
     # Create Renderer (Hardware Accelerated)
     renderer = Renderer(window, vsync=True)

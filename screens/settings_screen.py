@@ -49,7 +49,7 @@ class SettingsScreen(ScreenInterface):
         current_res = self.settings.get("screen_size", "1280x800")
         self.res_selector = GPUSelector(
             renderer,
-            options=["1280x800", "1024x600"],
+            options=["1280x800", "1024x600", "fullscreen"],
             selected_value=current_res,
             position=(300, 210),
             width=200,
@@ -72,7 +72,14 @@ class SettingsScreen(ScreenInterface):
         self.back_btn.bg_color = (150, 50, 50, 255)
         self.back_btn.rect.width = 150
         self.back_btn.rect.height = 60
-        self.back_btn.set_position((350, 300))
+        # Restart Button
+        self.restart_btn = GPUButton(
+            renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255)
+        )
+        self.restart_btn.bg_color = (200, 50, 50, 255)
+        self.restart_btn.rect.width = 150
+        self.restart_btn.rect.height = 60
+        self.restart_btn.set_position((100, 380))
 
     def handle_event(self, event, switch_screen_callback):
         # Handle Selectors (Top one first if expanded logic was complex, but click detection handles it)
@@ -93,6 +100,13 @@ class SettingsScreen(ScreenInterface):
         # Handle Buttons
         if self.back_btn.is_clicked(event):
             switch_screen_callback('main')
+            
+        if self.restart_btn.is_clicked(event):
+             import sys
+             import os
+             logger.info("Restarting application...")
+             pygame.quit()
+             os.execv(sys.executable, [sys.executable] + sys.argv)
             
         if self.apply_btn.is_clicked(event):
             new_cam = self.camera_selector.get_value()
@@ -126,18 +140,15 @@ class SettingsScreen(ScreenInterface):
         self.res_label.draw()
         self.res_selector.draw()
         
-        # Draw buttons (z-order: below expanded menus)
-        is_Any_Expanded = self.camera_selector.expanded or self.res_selector.expanded
+        self.apply_btn.draw()
+        self.back_btn.draw()
+        self.restart_btn.draw()
         
-        if not is_Any_Expanded:
-            self.apply_btn.draw()
-            self.back_btn.draw()
-        else:
-            self.apply_btn.draw()
-            self.back_btn.draw()
-            # Redraw selectors on top
-            self.camera_selector.draw()
-            self.res_selector.draw()
+        # Z-ORDER: Draw options LAST so they appear on top
+        if self.camera_selector.expanded:
+            self.camera_selector.draw_options()
+        if self.res_selector.expanded:
+            self.res_selector.draw_options()
 
     def on_enter(self, **context_data):
         # Refresh values from settings in case they changed
