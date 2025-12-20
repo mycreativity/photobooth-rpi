@@ -60,10 +60,15 @@ class MainScreen(ScreenInterface):
             image_path="assets/images/button_press-to-start.png", 
             position=(0,0)
         )
+        # Position: Center X, Vertical Center 2/5 from bottom
+        pts_layout_y_center = self.height * 0.6 # 60% down is 40% (2/5) from bottom
+        pts_half_h = self.button_press_to_start.image_rect.height / 2
+        pts_half_w = self.button_press_to_start.image_rect.width / 2
+
         self.button_press_to_start.set_position(
             (
-                int((self.width / 2) - (self.button_press_to_start.image_rect.width / 2)), 
-                int((self.height - 400) * self.sizing_factor)
+                int((self.width / 2) - pts_half_w), 
+                int(pts_layout_y_center - pts_half_h)
             )
         )
 
@@ -73,10 +78,15 @@ class MainScreen(ScreenInterface):
             image_path="assets/images/button_take-photo.png", 
             position=(0,0)
         )
+        # Position: Center X, Vertical Center 1/5 from bottom
+        btn_layout_y_center = self.height * 0.8 # 80% down is 20% (1/5) from bottom
+        btn_half_h = self.button_take_photo.image_rect.height / 2
+        btn_half_w = self.button_take_photo.image_rect.width / 2
+        
         self.button_take_photo.set_position(
             (
-                int((self.width / 2) - (self.button_take_photo.image_rect.width / 2)), 
-                int((self.height - 300) * self.sizing_factor)
+                int((self.width / 2) - btn_half_w), 
+                int(btn_layout_y_center - btn_half_h)
             )
         )
         
