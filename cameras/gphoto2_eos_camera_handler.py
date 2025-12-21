@@ -26,13 +26,9 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         self.image_lock = threading.Lock() # Lock to safely access latest_image
         self._stop_event = threading.Event() # Event to stop the thread
         
-        # Kill PTPCamera proactively
-        try:
-            subprocess.run(["killall", "PTPCamera"], capture_output=True)
-            time.sleep(1)
-        except:
-            pass
-
+        # Proactively kill PTPCamera before doing anything else
+        self._kill_ptp_camera()
+        
         # Initialize camera
         # Initialize camera with retry logic
         self.camera = gp.Camera()
@@ -72,10 +68,29 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
             except gp.GPhoto2Error as e:
                 logger.warn(f"Warning: Cannot start preview. Error: {e}")
 
+            except gp.GPhoto2Error as e:
+                logger.warn(f"Warning: Cannot start preview. Error: {e}")
+
+    def _kill_ptp_camera(self):
+        """Forcefully kills the PTPCamera process on macOS."""
+        logger.info("Attempting to kill PTPCamera process...")
+        try:
+            # Use pkill -9 to force kill any process matching "PTPCamera" case-insensitive
+            # If pkill is not available, try killall, but pkill is safer for full command lines sometimes.
+            # Using killall again but with -9
+            subprocess.run(["killall", "-9", "PTPCamera"], capture_output=True)
+            time.sleep(1) # Wait for OS to clean up
+        except Exception as e:
+            logger.error(f"Failed to kill PTPCamera: {e}")
+
     def _initialize_camera(self):
         """Attempts to initialize the camera, handling PTPCamera conflicts."""
         max_retries = 5
         for attempt in range(max_retries):
+            # Proactive kill on retries as well
+            if attempt > 0:
+                 self._kill_ptp_camera()
+                 
             try:
                 self.camera.init()
                 logger.info("Camera initialized successfully.")
@@ -83,12 +98,8 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
             except gp.GPhoto2Error as e:
                 logger.warn(f"Camera init failed (Attempt {attempt + 1}/{max_retries}): {e}")
                 if "-53" in str(e):
-                    logger.warn("Error -53 detected. Attempting to kill PTPCamera...")
-                    try:
-                        subprocess.run(["killall", "PTPCamera"], capture_output=True)
-                        time.sleep(1) # Wait for process to die
-                    except Exception as kille:
-                        logger.error(f"Failed to kill PTPCamera: {kille}")
+                    logger.warn("Error -53 detected. Killing PTPCamera...")
+                    self._kill_ptp_camera()
                 elif "-105" in str(e):
                      logger.warn("Error -105 (Unknown model). Camera might be off or disconnected.")
                 
@@ -96,7 +107,7 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
                     logger.info("Retrying in 2 seconds...")
                     time.sleep(2)
                 else:
-                    logger.fatal("CRITICAL: Could not initialize camera after multiple attempts.", exc_info=True)
+                    logger.error("CRITICAL: Could not initialize camera after multiple attempts.")
                     raise e
 
     # The 'run' method is automatically called when thread.start() is used

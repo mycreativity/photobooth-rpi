@@ -32,6 +32,41 @@ class CountdownScreen(ScreenInterface):
         if not pygame.font.get_init():
             pygame.font.init()
         self.font = pygame.font.SysFont("Arial", 36)
+        
+        # Load Overlay
+        from ui.gpu_image import GPUImage
+        self.overlay = GPUImage(renderer, "assets/images/preview-border.png")
+        
+        # Calculate Overlay Dimensions with 10px margin (scaled)
+        # Margin is 10 pixels on all sides relative to "base" resolution?
+        # User said: "Should be strectched to match the screen, but on all sides have 10 pixels margin (incorporate the scale factor here)"
+        
+        # Sizing factor calculation (similar to MainScreen)
+        self.sizing_factor = width / 1280
+        margin = int(10 * self.sizing_factor)
+        
+        # Target Size
+        t_w = self.width - (2 * margin)
+        t_h = self.height - (2 * margin)
+        
+        # Resize overlay once (or on resize event if we had one)
+        self.overlay.resize(t_w, t_h)
+        self.overlay.set_position((margin, margin))
+        
+        # Load Ready Text
+        self.ready_text = GPUImage(renderer, "assets/images/countdown_text_ready.png")
+        if self.ready_text.image_rect:
+            # Resize based on scale factor
+            orig_w = self.ready_text.image_rect.width
+            orig_h = self.ready_text.image_rect.height
+            new_w = int(orig_w * self.sizing_factor)
+            new_h = int(orig_h * self.sizing_factor)
+            self.ready_text.resize(new_w, new_h)
+            
+            # Center on screen
+            cx = (self.width - new_w) // 2
+            cy = (self.height - new_h) // 2
+            self.ready_text.set_position((cx, cy))
 
     def handle_event(self, event, switch_screen_callback):
         if event.type == pygame.KEYDOWN:
@@ -139,6 +174,12 @@ class CountdownScreen(ScreenInterface):
             renderer.draw_color = (255, 0, 0, 255)
             # Draw a filled rect
             renderer.fill_rect((0, 0, self.width, self.height))
+            
+        # Draw Overlay
+        self.overlay.draw()
+        
+        # Draw Ready Text
+        self.ready_text.draw()
 
     def update(self, dt, callback):
         # Logic update if needed
@@ -147,6 +188,9 @@ class CountdownScreen(ScreenInterface):
     def on_enter(self, **context_data):
         logger.info("Entering CountdownScreen.")
         self.camera_handler.start_continuous()
+        
+        # We can re-check scaling here if window resizing is dynamic during runtime, 
+        # but for now init handles it assuming restart on resize usually.
 
     def on_exit(self):
         logger.info("Exiting CountdownScreen.")

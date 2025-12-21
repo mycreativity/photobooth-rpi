@@ -19,6 +19,10 @@ class SettingsScreen(ScreenInterface):
         self.settings = settings_manager
         self.apply_callback = apply_callback
         
+        # Scale factor (base 1280x800)
+        self.sizing_factor = width / 1280
+        btn_radius = int(10 * self.sizing_factor)
+        
         self.font = pygame.font.SysFont("Arial", 24)
         
         # UI Elements
@@ -58,27 +62,26 @@ class SettingsScreen(ScreenInterface):
         
         # Apply Button
         self.apply_btn = GPUButton(
-            renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255)
+            renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.apply_btn.bg_color = (50, 150, 50, 255)
-        self.apply_btn.rect.width = 200
-        self.apply_btn.rect.height = 60
+        self.apply_btn.resize(200, 60)
         self.apply_btn.set_position((100, 300))
         
         # Cancel/Back Button
         self.back_btn = GPUButton(
-            renderer, text="Cancel", position=(350, 300), font=self.font, color=(255,255,255)
+            renderer, text="Cancel", position=(380, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.back_btn.bg_color = (150, 50, 50, 255)
-        self.back_btn.rect.width = 150
-        self.back_btn.rect.height = 60
+        self.back_btn.resize(150, 60)
+        self.back_btn.set_position((380, 300))
+
         # Restart Button
         self.restart_btn = GPUButton(
-            renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255)
+            renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.restart_btn.bg_color = (200, 50, 50, 255)
-        self.restart_btn.rect.width = 150
-        self.restart_btn.rect.height = 60
+        self.restart_btn.resize(150, 60)
         self.restart_btn.set_position((100, 380))
 
     def handle_event(self, event, switch_screen_callback):

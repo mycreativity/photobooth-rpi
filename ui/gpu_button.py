@@ -1,16 +1,19 @@
 
 import pygame
+from pygame._sdl2 import Texture
 from ui.gpu_image import GPUImage
 from ui.gpu_text_label import GPUTextLabel
 
 class GPUButton:
     """A button that can contain an image or text and handles clicks."""
-    def __init__(self, renderer, text=None, image_path=None, position=(0,0), font=None, color=(255,255,255), size=None):
+    def __init__(self, renderer, text=None, image_path=None, position=(0,0), font=None, color=(255,255,255), size=None, border_radius=0):
         self.renderer = renderer
         self.rect = pygame.Rect(position[0], position[1], 1, 1) # Placeholder
         self.image = None
         self.label = None
-        self.bg_color = None
+        self._bg_color = None
+        self._border_radius = border_radius
+        self._bg_texture = None
         
         # Priority: Image > Text
         if image_path:
@@ -26,7 +29,45 @@ class GPUButton:
             if self.label.rect:
                 self.rect = self.label.rect.inflate(20, 10)
                 self.rect.topleft = position
-            self.bg_color = (100, 100, 100, 255)
+            self._bg_color = (100, 100, 100, 255)
+
+        if self._border_radius > 0:
+            self._update_bg_texture()
+
+    @property
+    def bg_color(self):
+        return self._bg_color
+    
+    @bg_color.setter
+    def bg_color(self, value):
+        self._bg_color = value
+        self._update_bg_texture()
+
+    @property
+    def border_radius(self):
+        return self._border_radius
+    
+    @border_radius.setter
+    def border_radius(self, value):
+        self._border_radius = value
+        self._update_bg_texture()
+
+    def _update_bg_texture(self):
+        """Creates a texture for the rounded background."""
+        if self.rect.width <= 0 or self.rect.height <= 0:
+            return
+
+        if self._bg_color is None or self._border_radius <= 0:
+            self._bg_texture = None
+            return
+
+        # Create a surface with transparency
+        surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        # Draw rounded rect onto surface
+        pygame.draw.rect(surf, self._bg_color, (0, 0, self.rect.width, self.rect.height), border_radius=self._border_radius)
+        
+        # Upload to texture
+        self._bg_texture = Texture.from_surface(self.renderer, surf)
 
     def set_position(self, position):
         self.rect.topleft = position
@@ -39,76 +80,38 @@ class GPUButton:
             self.label.set_position((lx, ly))
 
     def resize(self, display_width, display_height):
-        """
-        Scales the button based on the screen size ratio compared to a base resolution.
-        Currently this method signature suggests direct width/height usage, but the user call
-        passed `width*factor`, `height*factor`. 
-        Ideally we just want to resize the internal image or rect.
-        
-        However, based on the user's manual call logic: "resize(self.width * self.sizing_factor...)"
-        it seems they might be passing the TARGET width/height? Or scaling factors?
-        Let's assume they might be passing just random args or we need a proper resize method
-        that takes `width, height` to force the button to that size.
-        """
-        # NOTE: The user called `resize(w * factor, h * factor)`.
-        # But `GPUImage.resize` takes absolute pixels.
-        # But `sizing_factor` is usually ratio like 1.0 or 0.8.
-        # If user passed `width * factor` (e.g. 1280 * 1.0) that is huge for a button?
-        # Ah wait, in `MainScreen` resizing logic:
-        # `size=300 * self.sizing_factor` for polaroid (w, h not specified?)
-        # For button start: `resize(self.width * factor, ...)` -> This looks like they want to scale RELATIVE to screen?
-        # WAIT. `GPUImage.resize(w, h)` resizes the image.
-        
-        # Let's implement a safe `resize(w, h)` that resizes the rect and internal content.
-        # If w, h are floats, cast to int.
+        """Scales the button and its contents."""
         w = int(display_width)
         h = int(display_height)
-        
-        # But wait, looking at user code: `self.settings_btn.resize(self.width * self.sizing_factor, self.height * self.sizing_factor)`
-        # `settings_btn` is 40x40. If screen is 1280x800, that call becomes resize(1280, 800)... 
-        # that will make the settings button full screen!
-        
-        # Correction: The user likely COPIED the params from somewhere else or misunderstood.
-        # However, to be helpful, maybe the user INTENDS to scale it BY that factor?
-        # But `resize` usually implies "set to this size".
-        
-        # Let's implement a standard `resize(width, height)` method.
-        # Takes new Absolute Width and Height.
-        
-        # IF the user is passing "Factor", we might break it. 
-        # But standard API is `resize(w, h)`.
         
         self.rect.width = w
         self.rect.height = h
         
         if self.image:
             self.image.resize(w, h)
-            # Update rect from image to be sure
             if self.image.image_rect:
                 self.rect = self.image.image_rect
-                
-        # If it's a label, strict resizing might distort text, but we can't easily font-size change strictly from W/H.
-        # We will just update the hit-rect.
-
+        
+        # Update background texture if needed
+        self._update_bg_texture()
 
     def is_clicked(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-             # Logic for mouse/touch
              if event.type == pygame.MOUSEBUTTONDOWN:
                  x, y = event.pos
              else:
-                 # Minimal touch logic assumption (normalize 0-1 to screen?)
-                 # For now assuming standard mouse events work for simplicity
-                 # Pygame often maps touch to mouse
                  x, y = pygame.mouse.get_pos()
                  
              return self.rect.collidepoint(x, y)
         return False
 
     def draw(self):
-        if self.bg_color:
-            self.renderer.draw_color = self.bg_color
-            self.renderer.fill_rect(self.rect)
+        if self._bg_color:
+            if self._bg_texture:
+                self._bg_texture.draw(dstrect=self.rect)
+            else:
+                self.renderer.draw_color = self._bg_color
+                self.renderer.fill_rect(self.rect)
             
         if self.image:
             self.image.draw()

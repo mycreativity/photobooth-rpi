@@ -20,14 +20,15 @@ faulthandler.enable()
 APP_TITLE = "Loomo Photobooth"
 FPS = 60
 
-# Global State for dynamic reconfiguration
+# Global State
 camera = None
-countdown_screen = None
 manager = None
 settings_manager = None
+window = None
 renderer = None
-screen_width = 0
-screen_height = 0
+screen_width = 1280
+screen_height = 800
+current_is_fullscreen = False
 
 def init_camera():
     """Initializes the camera based on settings."""
@@ -50,9 +51,9 @@ def init_camera():
         try:
             from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
             camera = GPhoto2EOSCameraHandler()
-        except ImportError:
-            logger.error("GPhoto2 handler not found or dependencies missing.")
-            # Fallback
+        except Exception as e:
+            logger.error(f"Failed to initialize DSLR: {e}")
+            logger.info("Falling back to Webcam.")
             from cameras.webcam_camera_handler import WebcamCameraHandler
             camera = WebcamCameraHandler(camera_index=0)
     else:
@@ -93,7 +94,7 @@ def init_screens(renderer, width, height, camera, settings_mgr, cb):
 
 def apply_settings_callback():
     """Called when settings are saved. Re-initializes components."""
-    global camera, manager, renderer, screen_width, screen_height, settings_manager, window
+    global camera, manager, renderer, screen_width, screen_height, settings_manager, window, current_is_fullscreen
     
     logger.info("Applying new settings...")
     
@@ -106,7 +107,7 @@ def apply_settings_callback():
     
     res_changed = (new_w != screen_width or new_h != screen_height)
     
-    if res_changed or is_fullscreen != window.fullscreen:
+    if res_changed or is_fullscreen != current_is_fullscreen:
         logger.info(f"Resolution changed to {new_w}x{new_h} (Fullscreen: {is_fullscreen}). Updating window...")
         screen_width = new_w
         screen_height = new_h
@@ -116,12 +117,14 @@ def apply_settings_callback():
              # Windowed -> Fullscreen
              if is_fullscreen:
                  window.set_fullscreen(True)
+                 current_is_fullscreen = True
                  # After setting fullscreen, check actual size? 
                  # Usually matches native, which we tried to guess in parse_resolution
              else:
                  # Fullscreen -> Windowed
                  # Use set_windowed to ensure decorations return
                  window.set_windowed()
+                 current_is_fullscreen = False
                      
                  window.size = (screen_width, screen_height)
                  window.position = (pygame.WINDOWPOS_CENTERED, pygame.WINDOWPOS_CENTERED)
@@ -138,7 +141,7 @@ def apply_settings_callback():
         logger.error(f"Failed to re-init screens: {e}")
 
 def main():
-    global camera, manager, settings_manager, renderer, screen_width, screen_height, window
+    global camera, manager, settings_manager, renderer, screen_width, screen_height, window, current_is_fullscreen
 
     # 1. Initialize Pygame
     pygame.init()
@@ -149,6 +152,7 @@ def main():
     # Detect / Load Resolution
     res_str = settings_manager.get("screen_size", "1280x800")
     screen_width, screen_height, is_start_fullscreen = parse_resolution(res_str)
+    current_is_fullscreen = is_start_fullscreen
 
     # 2. Setup Window and Renderer
     logger.info(f"Initializing SDL2 Window ({screen_width}x{screen_height}, Fullscreen={is_start_fullscreen})...")
