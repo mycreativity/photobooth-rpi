@@ -19,6 +19,10 @@ class GPUImage:
         self.texture = None
         self.image_rect = None 
         
+        # Animation properties
+        self.alpha = 255
+        self.scale = 1.0
+        
         # Load immediately
         self.load_image(self.image_path)
 
@@ -63,6 +67,8 @@ class GPUImage:
         try:
             # Create a static texture (access=0 default)
             self.texture = Texture.from_surface(self.renderer, self.surface)
+            # Enable alpha blending (1 = SDL_BLENDMODE_BLEND)
+            self.texture.blend_mode = 1
             # Update rect size in case of resize
             self.image_rect = self.surface.get_rect(topleft=self.position)
         except Exception as e:
@@ -75,11 +81,22 @@ class GPUImage:
             self.image_rect.topleft = position
 
     def draw(self):
-        """Draws the texture to the renderer."""
+        """Draws the texture to the renderer with current scale and alpha."""
         if not self.texture:
             return
             
-        self.texture.draw(dstrect=self.image_rect)
+        # Update texture alpha
+        self.texture.alpha = int(max(0, min(255, self.alpha)))
+        
+        if self.scale == 1.0:
+            self.texture.draw(dstrect=self.image_rect)
+        else:
+            # Calculate scaled rect centered at original position center
+            w = int(self.image_rect.width * self.scale)
+            h = int(self.image_rect.height * self.scale)
+            cx, cy = self.image_rect.center
+            scaled_rect = pygame.Rect(cx - w//2, cy - h//2, w, h)
+            self.texture.draw(dstrect=scaled_rect)
 
     def cleanup(self):
         """Releases the texture."""

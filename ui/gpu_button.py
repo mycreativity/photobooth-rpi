@@ -1,4 +1,3 @@
-
 import pygame
 from pygame._sdl2 import Texture
 from ui.gpu_image import GPUImage
