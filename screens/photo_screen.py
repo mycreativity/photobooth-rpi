@@ -58,13 +58,13 @@ class PhotoScreen(ScreenInterface):
         if not self.is_captured:
             self.is_captured = True
             logger.info("Taking high-res photo...")
+
+            self.preview_image = self.camera_handler.get_latest_image()
             
             # Stop live view for capture (critical for DSLR)
             self.camera_handler.stop_continuous()
             
-            # Wait a brief moment to ensure the preview thread has fully released the camera
-            import time
-            time.sleep(0.5)
+            # (Wait is already handled inside stop_continuous)
             
             high_res_img = self.camera_handler.take_photo()
             if high_res_img:
@@ -75,6 +75,9 @@ class PhotoScreen(ScreenInterface):
                 filename = f"photos/photo_{timestamp}.jpg"
                 high_res_img.save(filename, "JPEG", quality=95)
                 logger.info(f"Photo saved to {filename}")
+
+                filename = f"photos/photo_{timestamp}_p.jpg"
+                self.preview_image.save(filename, "JPEG", quality=95)
                 
                 # Create Polaroid (Size 500 scaled)
                 self.polaroid = GPUPolaroid(self.renderer, filename, size=int(500 * self.sizing_factor))
@@ -83,7 +86,6 @@ class PhotoScreen(ScreenInterface):
                 p_w = self.polaroid.frame.image_rect.width
                 p_h = self.polaroid.frame.image_rect.height
                 self.polaroid.set_position(((self.width - p_w) // 2, (self.height - p_h) // 2))
-                # self.polaroid.set_rotation(3.0) # Slight festive tilt
             else:
                 logger.error("Failed to capture photo!")
             
@@ -94,8 +96,8 @@ class PhotoScreen(ScreenInterface):
             self.elapsed_time = 0.0
 
         # 2. Update Live Preview (background)
-        img = self.camera_handler.get_latest_image()
-        self.preview.update(img)
+        self.preview_image = self.camera_handler.get_latest_image()
+        self.preview.update(self.preview_image)
 
         # 3. Handle Flash Fade (Fade out over 1.0 second)
         # 3. Handle Flash Fade (Fade out over 0.5 second)
@@ -137,13 +139,14 @@ class PhotoScreen(ScreenInterface):
                 
                 # Target Y: Bottom center. Bottom aligned.
                 # height - margin - final_h
-                target_y = self.height - 40 - final_h
+                target_y = self.height - final_h
                 
                 self.polaroid_target_pos = (target_x, target_y)
                 
                 # Random rotation -5 to 5
                 import random
-                self.polaroid_target_rot = random.uniform(-5.0, 5.0)
+                # self.polaroid_target_rot = random.uniform(-5.0, 5.0)
+                self.polaroid_target_rot = 0
 
         # Process Fall Animation
         if self.animation_phase == 'fall':

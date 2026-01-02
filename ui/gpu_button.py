@@ -3,7 +3,7 @@ from pygame._sdl2 import Texture
 from ui.gpu_image import GPUImage
 from ui.gpu_text_label import GPUTextLabel
 
-class GPUButton:
+class GPUImageButton:
     """A button that can contain an image or text and handles clicks."""
     def __init__(self, renderer, text=None, image_path=None, position=(0,0), font=None, color=(255,255,255), size=None, border_radius=0):
         self.renderer = renderer

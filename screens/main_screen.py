@@ -109,8 +109,8 @@ class MainScreen(ScreenInterface):
         )
         
         # --- INSTANCE OF SETTINGS BUTTON ---
-        from ui.gpu_button import GPUButton
-        self.settings_btn = GPUButton(
+        from ui.gpu_button import GPUImageButton
+        self.settings_btn = GPUImageButton(
             renderer,
             image_path="assets/images/icon-settings.png",
             position=(self.width - 60, 20),

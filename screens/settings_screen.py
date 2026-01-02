@@ -1,7 +1,7 @@
 
 import pygame
 from ui.gpu_image import GPUImage
-from ui.gpu_button import GPUButton
+from ui.gpu_button import GPUImageButton
 from ui.gpu_selector import GPUSelector
 from .screen_interface import ScreenInterface
 from utils.logger import get_logger
@@ -29,11 +29,11 @@ class SettingsScreen(ScreenInterface):
         self.background = GPUImage(renderer, "assets/images/background.png")
         self.background.resize(width, height)
         
-        self.title = GPUButton(renderer, text="Settings", position=(50, 50), font=pygame.font.SysFont("Arial", 40), color=(0,0,0))
+        self.title = GPUImageButton(renderer, text="Settings", position=(50, 50), font=pygame.font.SysFont("Arial", 40), color=(0,0,0))
         self.title.bg_color = None
         
         # Camera Selector
-        self.cam_label = GPUButton(renderer, text="Camera Source:", position=(100, 150), font=self.font, color=(0,0,0))
+        self.cam_label = GPUImageButton(renderer, text="Camera Source:", position=(100, 150), font=self.font, color=(0,0,0))
         self.cam_label.bg_color = None
         
         current_cam = self.settings.get("camera_type", "webcam")
@@ -47,7 +47,7 @@ class SettingsScreen(ScreenInterface):
         )
         
         # Resolution Selector
-        self.res_label = GPUButton(renderer, text="Resolution:", position=(100, 220), font=self.font, color=(0,0,0))
+        self.res_label = GPUImageButton(renderer, text="Resolution:", position=(100, 220), font=self.font, color=(0,0,0))
         self.res_label.bg_color = None
         
         current_res = self.settings.get("screen_size", "1280x800")
@@ -61,7 +61,7 @@ class SettingsScreen(ScreenInterface):
         )
         
         # Apply Button
-        self.apply_btn = GPUButton(
+        self.apply_btn = GPUImageButton(
             renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.apply_btn.bg_color = (50, 150, 50, 255)
@@ -69,7 +69,7 @@ class SettingsScreen(ScreenInterface):
         self.apply_btn.set_position((100, 300))
         
         # Cancel/Back Button
-        self.back_btn = GPUButton(
+        self.back_btn = GPUImageButton(
             renderer, text="Cancel", position=(380, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.back_btn.bg_color = (150, 50, 50, 255)
@@ -77,7 +77,7 @@ class SettingsScreen(ScreenInterface):
         self.back_btn.set_position((380, 300))
 
         # Restart Button
-        self.restart_btn = GPUButton(
+        self.restart_btn = GPUImageButton(
             renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255), border_radius=btn_radius
         )
         self.restart_btn.bg_color = (200, 50, 50, 255)
