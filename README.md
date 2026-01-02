@@ -1,65 +1,48 @@
-# Photobooth
+# Loomo Photobooth
 
-A retro-inspired photobooth application built with Pygame, featuring a countdown timer, animated polaroid carousel, and a stylish UI for taking and previewing photos.
+A Python-based photobooth application designed for Raspberry Pi (and macOS), featuring DSLR integration (Canon EOS) and a smooth OpenGL-based UI.
 
 ## Features
+- **DSLR Live View**: Real-time high-quality preview using `gphoto2`.
+- **Countdown UI**: Animated countdown screen.
+- **OpenGL Rendering**: Efficient hardware-accelerated display using PyGame and OpenGL.
+- **Cross-Platform**: Runs on Raspberry Pi (Linux) and macOS.
 
-- **Animated Start Screen**: Carousel of recent photos in polaroid frames.
-- **Touch/Click to Start**: Large retro button to begin photo session.
-- **Countdown Timer**: Visual countdown before capturing a photo.
-- **Live Camera Capture**: Uses OpenCV to take photos from your webcam.
-- **Photo Preview**: Approve or retake your photo with stylish buttons.
-- **Polaroid-Style Frames**: Photos are displayed in realistic polaroid frames with shadows and textures.
-- **FPS Counter**: For performance monitoring.
+## Hardware Requirements
+- **Camera**: Canon EOS DSLR (tested with 750D).
+- **Computer**: Raspberry Pi 4/5 or macOS.
+- **Connection**: USB cable between camera and computer.
 
-## Folder Structure
+## Installation
 
-```
-assets/         # Fonts, images, sounds (UI textures, icons, shutter sound)
-photos/         # Saved photos (auto-ignored by git)
-screens/        # Screen classes (start, countdown, preview, etc.)
-ui/             # UI components (buttons, cards, polaroid, carousel, etc.)
-utils/          # Utility functions (image processing, etc.)
-main.py         # Application entry point
-```
+### Prerequisites
+1.  **System Dependencies**:
+    - **macOS**: `brew install gphoto2`
+    - **Linux (RPi)**: `sudo apt install gphoto2 libgphoto2-dev`
 
-## Requirements
+2.  **Python Environment**:
+    It is recommended to use a virtual environment.
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-- Python 3.8+
-- [Pygame](https://www.pygame.org/)
-- [OpenCV](https://opencv.org/) (`opencv-python`)
-- [NumPy](https://numpy.org/)
-- [SciPy](https://scipy.org/)
-
-Install dependencies:
-
-```sh
-pip install pygame opencv-python numpy scipy
-```
+3.  **Python Packages**:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ## Usage
 
-1. Place your assets (fonts, images, sounds) in the [`assets`](assets) directory.
-2. Run the application:
+1.  Connect your DSLR camera via USB.
+2.  Ensure the camera is ON and auto-power-off is disabled (or set to a long duration).
+3.  Run the application:
+    ```bash
+    source venv/bin/activate
+    python main.py
+    ```
+    *(Note: On some systems, you might need `sudo` if permissions are an issue, but standard user permissions should suffice with correct udev rules).*
 
-```sh
-python main.py
-```
-
-3. Photos taken will be saved in the [`photos`](photos) directory.
-
-## Customization
-
-- **UI Text & Fonts**: Change text and font files in [`ui/card.py`](ui/card.py), [`ui/text.py`](ui/text.py), etc.
-- **Photo Frame Textures**: Replace images in [`assets/images`](assets/images).
-- **Sounds**: Replace [`assets/sounds/shutter.wav`](assets/sounds/shutter.wav) for custom shutter sound.
-
-## Notes
-
-- The [`photos`](photos) directory is git-ignored by default.
-- Make sure your webcam is connected and accessible.
-- For best results, use high-resolution assets and fonts.
-
----
-
-**Made with ❤️ using Pygame and OpenCV.**
+## Troubleshooting
+- **Black Screen**: Ensure the camera is in Live View mode or supported by `gphoto2`.
+- **"Could not claim interface"**: Make sure no other process (like the OS file manager) has mounted the camera.
