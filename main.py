@@ -7,6 +7,7 @@ from screens.countdown_screen import CountdownScreen
 from screens.screen_manager import ScreenManager
 from screens.main_screen import MainScreen
 from screens.settings_screen import SettingsScreen
+from screens.photo_screen import PhotoScreen
 from ui.gpu_image import GPUImage
 from utils.logger import get_logger
 from utils.settings_manager import SettingsManager
@@ -85,9 +86,12 @@ def init_screens(renderer, width, height, camera, settings_mgr, cb):
     countdown_screen = CountdownScreen(renderer, width, height, camera)
     settings_screen = SettingsScreen(renderer, width, height, settings_mgr, cb)
     
+    photo_screen = PhotoScreen(renderer, width, height, camera)
+    
     mgr.add_screen('main', main_screen)
     mgr.add_screen('countdown', countdown_screen)
     mgr.add_screen('settings', settings_screen)
+    mgr.add_screen('photo', photo_screen)
     
     mgr.set_initial_screen('main')
     return mgr

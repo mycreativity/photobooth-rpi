@@ -136,22 +136,33 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
 
     def start_continuous(self):
         """
-        Activates continuous Live View mode and starts thread if not running.
+        Activates continuous Live View mode.
         """
-        if not self._set_config():
-            return
+        # Ensure previous instance or thread is ready
+        retries = 3
+        while retries > 0:
+            try:
+                if self._set_config():
+                    self.live_view_active = True
+                    
+                    if not self.running:
+                        self.running = True
+                        self.start() # Start the thread
+                    return # Success
+            except Exception as e:
+                logger.warn(f"Failed to start continuous mode: {e}, retrying...")
+                retries -= 1
+                time.sleep(1.0) # Wait a bit explicitly
         
-        self.live_view_active = True
-        
-        if not self.running:
-            self.running = True
-            self.start() # Start de thread
+        logger.error("Failed to start continuous mode after retries.")
 
     def stop_continuous(self):
         """
-        Deactivates continuous Live View mode.
+        Deactivates continuous Live View mode and waits for the loop to pause.
         """
         self.live_view_active = False
+        # Give the thread a moment to see the flag and stop issuing commands
+        time.sleep(0.2)
 
     def get_latest_image(self):
         """
@@ -179,8 +190,8 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         Takes a full photo (blocking).
         Returns the PIL Image.
         """
-        if self.running:
-            logger.warn("Cannot take photo: continuous mode is active.")
+        if self.live_view_active:
+            logger.warn("Cannot take photo: live view is active. Call stop_continuous first.")
             return None
         
         self._reset_config()
@@ -231,10 +242,14 @@ class GPhoto2EOSCameraHandler(CameraInterface, threading.Thread):
         Processes binary camera data and returns a PIL Image object.
         """
         file_data = camera_file.get_data_and_size()
-        image = Image.open(io.BytesIO(file_data))
-        # Image.load() is needed to process data in thread before releasing lock
-        image.load() 
-        return image
+        try:
+            image = Image.open(io.BytesIO(file_data))
+            # Image.load() is needed to process data in thread before releasing lock
+            image.load() 
+            return image
+        except Exception as e:
+            logger.warn(f"Failed to decode image from camera: {e}")
+            return None
 
     def _set_config(self):
         # ... (configuratie logica, ongewijzigd) ...

@@ -1,7 +1,8 @@
+import os
+import datetime
 import pygame
 from pygame._sdl2 import Texture
 from PIL import Image
-
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
 from utils.logger import get_logger
@@ -19,6 +20,8 @@ class CountdownScreen(ScreenInterface):
         self.height = height
         self.camera_handler = camera
         self.preview = LivePreview(renderer, width, height)
+        self.polaroids_list = [] # From previous shots
+        self.photo_index = 1
         
         # Sizing factor calculation
         self.sizing_factor = width / 1280
@@ -38,8 +41,7 @@ class CountdownScreen(ScreenInterface):
             'text_3': GPUImage(renderer, "assets/images/countdown_text_3.png"),
             'text_2': GPUImage(renderer, "assets/images/countdown_text_2.png"),
             'text_1': GPUImage(renderer, "assets/images/countdown_text_1.png"),
-            'smile': GPUImage(renderer, "assets/images/countdown_text_smile.png"),
-            'flash': GPUImage(renderer, "assets/images/white_flash.png")
+            'smile': GPUImage(renderer, "assets/images/countdown_text_smile.png")
         }
         
         # Resize and position all elements
@@ -50,10 +52,6 @@ class CountdownScreen(ScreenInterface):
             img.set_position(((self.width - new_w) // 2, (self.height - new_h) // 2))
             img.alpha = 0
             img.scale = 1.0
-
-        # Flash scale to full screen, and position it in the top-left corner
-        self.countdown_images['flash'].resize(self.width, self.height)
-        self.countdown_images['flash'].set_position((0, 0))
 
         self.current_number = None
         self.elapsed_time = 0.0
@@ -106,25 +104,14 @@ class CountdownScreen(ScreenInterface):
             self.countdown_images['smile'].alpha = 255
 
         elif self.elapsed_time < 8.0:
-            anim_progress = self.elapsed_time - 7.0 # Growing to 1 second
+            anim_progress = self.elapsed_time - 7.0 
             self.countdown_images['smile'].alpha = int(255 * (1.0 - anim_progress * fade_speed)) if anim_progress < 1.0 else 0
             self.countdown_images['smile'].scale = 1.0 + (0.5 * anim_progress)
-
-            self.countdown_images['flash'].alpha = 255
-
-        elif self.elapsed_time < 9.0:   
-            anim_progress = self.elapsed_time - 8.0 
-            self.countdown_images['flash'].alpha = int(255 * (1.0 - anim_progress * fade_speed)) if anim_progress < 1.0 else 0
             
-            # TRIGGER CAPTURE ONCE at the start of the flash
-            if not self.is_captured:
-                self.is_captured = True
-                logger.info("FLASH! Taking photo now.")
-                # Here you would normally call your high-res capture logic
-
         else:
-            # Animation finished, return to main
-            callback('main')
+            # Animation finished, move to capturing phase
+            # Pass persistence data
+            callback('photo', photo_index=self.photo_index, polaroids=self.polaroids_list)
 
     def draw(self, renderer):
         # Clear back buffer
@@ -139,22 +126,30 @@ class CountdownScreen(ScreenInterface):
         self.overlay.draw()
 
         # Draw images only if visible
+        # Draw images only if visible
         for img in self.countdown_images.values():
             if img.alpha > 0:
                 img.draw()
+                
+        # Draw previous polaroids (at bottom)
+        for p in self.polaroids_list:
+            p.draw()
         
     def on_enter(self, **context_data):
         logger.info("Entering CountdownScreen.")
         self.camera_handler.start_continuous()
         
         self.elapsed_time = 0.0
-        self.is_captured = False
         # Reset all alphas and scales
         for img in self.countdown_images.values():
             img.alpha = 0
             img.scale = 1.0
         self.countdown_images['ready'].alpha = 255
         self.current_number = None
+        
+        # Context Data
+        self.photo_index = context_data.get('photo_index', 1)
+        self.polaroids_list = context_data.get('polaroids', [])
         
     def on_exit(self):
         logger.info("Exiting CountdownScreen.")

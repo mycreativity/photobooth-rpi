@@ -64,34 +64,77 @@ class GPUPolaroid:
     def set_rotation(self, angle):
         self.rotation_angle = angle
 
+    def set_scale(self, scale):
+        self.scale = scale
+
     def draw(self):
         """Draws the rotated polaroid."""
-        # 1. Determine the Center of Rotation (The Frame's center)
         if not self.frame.image_rect or not self.photo.image_rect:
             return
 
-        # Frame Center relative to Frame Top-Left
-        frame_w = self.frame.image_rect.width
-        frame_h = self.frame.image_rect.height
+        # Apply Scale
+        current_scale = getattr(self, 'scale', 1.0)
+        
+        # Frame
+        frame_w = int(self.frame.image_rect.width * current_scale)
+        frame_h = int(self.frame.image_rect.height * current_scale)
+        
+        # Rect for drawing
+        frame_dst = (
+            self.frame.image_rect.x, 
+            self.frame.image_rect.y, 
+            frame_w, 
+            frame_h
+        )
+        
+        # Photo
+        photo_w = int(self.photo.image_rect.width * current_scale)
+        photo_h = int(self.photo.image_rect.height * current_scale)
+        
+        # We need to render the photo at the correct relative position
+        # The positions set in object are Top-Left unscaled.
+        # But wait, if we scale, we usually scale around center or logical origin?
+        # The `set_position` sets the Top-Left of the FRAME.
+        # If we just scale the W/H, the Top-Left remains, so it shrinks towards Top-Left.
+        # This is acceptable for "falling", we just adjust Target X/Y.
+        
+        photo_dst = (
+            self.photo.image_rect.x, # Photo absolute X (calculated in set_pos)
+            self.photo.image_rect.y, 
+            photo_w, 
+            photo_h
+        )
+        
+        # BUT: The relative offset of photo inside frame must also scale.
+        # self.photo.image_rect.x is FrameX + PaddingSides.
+        # If we scale, the visual padding shrinks.
+        # So we must recalculate the Photo DST X/Y based on Scaled Padding.
+        
+        # Recalculate offsets based on scale
+        scaled_sides = int(self.frame_padding_sides * current_scale)
+        scaled_top = int(self.frame_padding_top * current_scale)
+        
+        photo_dst_x = self.frame.image_rect.x + scaled_sides
+        photo_dst_y = self.frame.image_rect.y + scaled_top
+        
+        photo_dst = (photo_dst_x, photo_dst_y, photo_w, photo_h)
+
+        # Origins for Rotation (Centers of the SCALED rects)
         origin_frame = (frame_w // 2, frame_h // 2)
         
-        # Frame Center relative to Photo Top-Left
-        # (Center_X_Frame - Photo_X)
-        frame_center_x_abs = self.frame.image_rect.x + (frame_w // 2)
-        frame_center_y_abs = self.frame.image_rect.y + (frame_h // 2)
-        
-        photo_x = self.photo.image_rect.x
-        photo_y = self.photo.image_rect.y
+        # Frame Center (SCALED) relative to Photo Top-Left (SCALED)
+        frame_center_x = self.frame.image_rect.x + (frame_w // 2)
+        frame_center_y = self.frame.image_rect.y + (frame_h // 2)
         
         origin_photo = (
-            frame_center_x_abs - photo_x,
-            frame_center_y_abs - photo_y
+            frame_center_x - photo_dst_x,
+            frame_center_y - photo_dst_y
         )
         
         # Draw Frame
         if self.frame.texture:
             self.frame.texture.draw(
-                dstrect=self.frame.image_rect,
+                dstrect=frame_dst,
                 angle=self.rotation_angle,
                 origin=origin_frame
             )
@@ -99,7 +142,7 @@ class GPUPolaroid:
         # Draw Photo
         if self.photo.texture:
             self.photo.texture.draw(
-                dstrect=self.photo.image_rect,
+                dstrect=photo_dst,
                 angle=self.rotation_angle,
                 origin=origin_photo
             )
