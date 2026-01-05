@@ -69,6 +69,20 @@ class Logger:
                 "pid": os.getpid(),
             }
             
+            # Add caller info
+            try:
+                # Stack: 0=here, 1=log(), 2=debug/info/etc, 3=caller
+                frame = traceback.extract_stack()[-4]
+                entry["file"] = os.path.basename(frame.filename)
+                entry["line"] = frame.lineno
+                entry["func"] = frame.name
+                
+                # Check for class context if available in local variables of frame?
+                # Hard to get class reliably without inspecting frame object which traceback.extract_stack doesn't fully give.
+                # But filename/line is usually enough.
+            except Exception:
+                pass
+            
             if stack_trace:
                 entry["stack_trace"] = stack_trace
                 

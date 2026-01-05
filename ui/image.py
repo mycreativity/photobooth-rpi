@@ -1,11 +1,11 @@
-
 import pygame
 from pygame._sdl2 import Texture
 from utils.logger import get_logger
+from utils.image_utils import ImageUtils
 
-logger = get_logger("GPUImage")
+logger = get_logger("Image")
 
-class GPUImage:
+class Image:
     """
     Renders and manages an image as a hardware-accelerated texture using Pygame-CE's SDL2 Renderer.
     """
@@ -27,7 +27,7 @@ class GPUImage:
         self.load_image(self.image_path)
 
     def load_image(self, path):
-        """Loads the image from disk and creates the GPU texture."""
+        """Loads the image from disk and creates the texture."""
         try:
             # 1. Load Surface
             self.surface = pygame.image.load(path)
@@ -57,6 +57,19 @@ class GPUImage:
             self.surface, 
             (int(new_width), int(new_height))
         )
+        self.update_texture()
+
+    def resize_and_crop_to_fit(self, target_width, target_height):
+        if not self.surface:
+            return
+        self.surface = ImageUtils.resize_and_crop_to_fit(self.surface, target_width, target_height)
+        self.update_texture()
+
+    def resize_to_fit(self, target_width, target_height):
+        if not self.surface:
+            return
+        # Note: fit_image_to_rect expects (width, height) tuple
+        self.surface = ImageUtils.fit_image_to_rect(self.surface, (target_width, target_height))
         self.update_texture()
 
     def update_texture(self):

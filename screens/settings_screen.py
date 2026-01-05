@@ -1,8 +1,8 @@
 
 import pygame
-from ui.gpu_image import GPUImage
-from ui.gpu_button import GPUImageButton
-from ui.gpu_selector import GPUSelector
+from ui.image import Image
+from ui.button import Button
+from ui.selector import Selector
 from .screen_interface import ScreenInterface
 from utils.logger import get_logger
 from config import *
@@ -26,18 +26,16 @@ class SettingsScreen(ScreenInterface):
         self.font = pygame.font.SysFont("Arial", 24)
         
         # UI Elements
-        self.background = GPUImage(renderer, "assets/images/background.png")
+        self.background = Image(renderer, "assets/images/background.png")
         self.background.resize(width, height)
         
-        self.title = GPUImageButton(renderer, text="Settings", position=(50, 50), font=pygame.font.SysFont("Arial", 40), color=(0,0,0))
-        self.title.bg_color = None
+        self.title = Button(renderer, text="Settings", position=(50, 50), font=pygame.font.SysFont("Arial", 40), color=(0,0,0), bg_color=None)
         
         # Camera Selector
-        self.cam_label = GPUImageButton(renderer, text="Camera Source:", position=(100, 150), font=self.font, color=(0,0,0))
-        self.cam_label.bg_color = None
+        self.cam_label = Button(renderer, text="Camera Source:", position=(100, 150), font=self.font, color=(0,0,0), bg_color=None)
         
         current_cam = self.settings.get("camera_type", "webcam")
-        self.camera_selector = GPUSelector(
+        self.camera_selector = Selector(
             renderer, 
             options=["webcam", "dslr"], 
             selected_value=current_cam, 
@@ -47,11 +45,10 @@ class SettingsScreen(ScreenInterface):
         )
         
         # Resolution Selector
-        self.res_label = GPUImageButton(renderer, text="Resolution:", position=(100, 220), font=self.font, color=(0,0,0))
-        self.res_label.bg_color = None
+        self.res_label = Button(renderer, text="Resolution:", position=(100, 220), font=self.font, color=(0,0,0), bg_color=None)
         
         current_res = self.settings.get("screen_size", "1280x800")
-        self.res_selector = GPUSelector(
+        self.res_selector = Selector(
             renderer,
             options=["1280x800", "1024x600", "fullscreen"],
             selected_value=current_res,
@@ -61,28 +58,21 @@ class SettingsScreen(ScreenInterface):
         )
         
         # Apply Button
-        self.apply_btn = GPUImageButton(
-            renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
+        self.apply_btn = Button(
+            renderer, text="Save & Apply", position=(100, 300), font=self.font, color=(255,255,255), border_radius=btn_radius, bg_color=(50, 150, 50, 255), size=(200, 60)
         )
-        self.apply_btn.bg_color = (50, 150, 50, 255)
-        self.apply_btn.resize(200, 60)
-        self.apply_btn.set_position((100, 300))
+        # self.apply_btn.resize(200, 60) # Handled by size arg
         
         # Cancel/Back Button
-        self.back_btn = GPUImageButton(
-            renderer, text="Cancel", position=(380, 300), font=self.font, color=(255,255,255), border_radius=btn_radius
+        self.back_btn = Button(
+            renderer, text="Cancel", position=(380, 300), font=self.font, color=(255,255,255), border_radius=btn_radius, bg_color=(150, 50, 50, 255), size=(150, 60)
         )
-        self.back_btn.bg_color = (150, 50, 50, 255)
-        self.back_btn.resize(150, 60)
-        self.back_btn.set_position((380, 300))
-
+        
         # Restart Button
-        self.restart_btn = GPUImageButton(
-            renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255), border_radius=btn_radius
+        self.restart_btn = Button(
+            renderer, text="Restart App", position=(100, 380), font=self.font, color=(255,255,255), border_radius=btn_radius, bg_color=(200, 50, 50, 255), size=(150, 60)
         )
-        self.restart_btn.bg_color = (200, 50, 50, 255)
-        self.restart_btn.resize(150, 60)
-        self.restart_btn.set_position((100, 380))
+
 
     def handle_event(self, event, switch_screen_callback):
         # Handle Selectors (Top one first if expanded logic was complex, but click detection handles it)

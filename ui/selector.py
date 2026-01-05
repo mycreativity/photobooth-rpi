@@ -1,8 +1,8 @@
 
 import pygame
-from ui.gpu_button import GPUImageButton
+from ui.button import Button
 
-class GPUSelector:
+class Selector:
     """A simple dropdown list selector."""
     
     def __init__(self, renderer, options, selected_value, position, width=200, font=None):
@@ -21,7 +21,7 @@ class GPUSelector:
         
         # Main Button (Current Value)
         # We start with a generic button but will customize drawing
-        self.main_button = GPUImageButton(
+        self.main_button = Button(
             renderer, 
             text=f"{self.selected_value}", 
             position=position, 
@@ -44,7 +44,7 @@ class GPUSelector:
         start_y = self.position[1] + 40 
         
         for opt in self.options:
-            btn = GPUImageButton(
+            btn = Button(
                 self.renderer,
                 text=opt,
                 position=(self.position[0], start_y),

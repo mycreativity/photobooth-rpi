@@ -1,14 +1,13 @@
-
 import pygame
 from pygame._sdl2 import Texture
 from utils.logger import get_logger
 
-logger = get_logger("GPUTextLabel")
-
-class GPUTextLabel:
+logger = get_logger("TextLabel")
+ 
+class TextLabel:
     """Renders text as a GPU Texture."""
     
-    def __init__(self, renderer, initial_text="Default", font=None, color=(255, 255, 255)):
+    def __init__(self, renderer, text="Default", font=None, color=(255, 255, 255)):
         self.renderer = renderer
         self.font = font or pygame.font.Font(None, 20)
         self.color = color
@@ -18,7 +17,7 @@ class GPUTextLabel:
         self.texture = None
         self.rect = None
         
-        self.update_text(initial_text)
+        self.update_text(text)
 
     def update_text(self, text):
         """Creates new surface and texture from text."""

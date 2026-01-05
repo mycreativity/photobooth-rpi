@@ -6,7 +6,7 @@ from PIL import Image
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
 from utils.logger import get_logger
-from ui.gpu_image import GPUImage
+from ui.image import Image
 from ui.live_preview import LivePreview
 
 logger = get_logger("CountdownScreen")
@@ -27,7 +27,7 @@ class CountdownScreen(ScreenInterface):
         self.sizing_factor = width / 1280
         
         # Load Overlay
-        self.overlay = GPUImage(renderer, "assets/images/preview-border.png")
+        self.overlay = Image(renderer, "assets/images/preview-border.png")
         margin = int(10 * self.sizing_factor)
         overlay_width = self.width - (2 * margin)
         overlay_height = self.height - (2 * margin)
@@ -37,11 +37,11 @@ class CountdownScreen(ScreenInterface):
         # Countdown Images
         # We quote 'ready' to fix the NameError.
         self.countdown_images = {
-            'ready': GPUImage(renderer, "assets/images/countdown_text_ready.png"),
-            'text_3': GPUImage(renderer, "assets/images/countdown_text_3.png"),
-            'text_2': GPUImage(renderer, "assets/images/countdown_text_2.png"),
-            'text_1': GPUImage(renderer, "assets/images/countdown_text_1.png"),
-            'smile': GPUImage(renderer, "assets/images/countdown_text_smile.png")
+            'ready': Image(renderer, "assets/images/countdown_text_ready.png"),
+            'text_3': Image(renderer, "assets/images/countdown_text_3.png"),
+            'text_2': Image(renderer, "assets/images/countdown_text_2.png"),
+            'text_1': Image(renderer, "assets/images/countdown_text_1.png"),
+            'smile': Image(renderer, "assets/images/countdown_text_smile.png")
         }
         
         # Resize and position all elements

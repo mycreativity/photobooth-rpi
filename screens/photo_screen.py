@@ -3,9 +3,9 @@ import datetime
 import pygame
 from screens.screen_interface import ScreenInterface
 from utils.logger import get_logger
-from ui.gpu_image import GPUImage
+from ui.image import Image
 from ui.live_preview import LivePreview
-from ui.gpu_polaroid import GPUPolaroid
+from ui.polaroid import Polaroid
 
 logger = get_logger("PhotoScreen")
 
@@ -24,7 +24,7 @@ class PhotoScreen(ScreenInterface):
         self.sizing_factor = width / 1280
         
         # White Flash Overlay
-        self.flash_overlay = GPUImage(renderer, "assets/images/white_flash.png")
+        self.flash_overlay = Image(renderer, "assets/images/white_flash.png")
         self.flash_overlay.resize(width, height)
         self.flash_overlay.set_position((0, 0))
         self.flash_overlay.alpha = 255
@@ -80,7 +80,7 @@ class PhotoScreen(ScreenInterface):
                 self.preview_image.save(filename, "JPEG", quality=95)
                 
                 # Create Polaroid (Size 500 scaled)
-                self.polaroid = GPUPolaroid(self.renderer, filename, size=int(500 * self.sizing_factor))
+                self.polaroid = Polaroid(self.renderer, filename, size=int(500 * self.sizing_factor))
                 
                 # Center Polaroid
                 p_w = self.polaroid.frame.image_rect.width

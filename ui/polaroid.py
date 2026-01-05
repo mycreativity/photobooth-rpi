@@ -1,9 +1,8 @@
-
 import pygame
 from utils.image_utils import ImageUtils
-from ui.gpu_image import GPUImage
+from ui.image import Image
 
-class GPUPolaroid:
+class Polaroid:
     """
     Combines a photo and a frame into a Polaroid-effect using GPU Textures.
     """
@@ -24,7 +23,7 @@ class GPUPolaroid:
         self.photo_width = int(size)
         self.photo_height = int(size)
         
-        self.photo = GPUImage(renderer, photo_path)
+        self.photo = Image(renderer, photo_path)
         
         # Crop and Resize Photo Surface
         if self.photo.surface:
@@ -40,7 +39,7 @@ class GPUPolaroid:
         frame_w_ref = self.frame_padding_sides * 2 + self.photo_width
         frame_h_ref = self.frame_padding_top + self.frame_padding_bottom + self.photo_height
         
-        self.frame = GPUImage(renderer, frame_path)
+        self.frame = Image(renderer, frame_path)
         if self.frame.surface:
              self.frame.surface = pygame.transform.scale(
                 self.frame.surface, (frame_w_ref, frame_h_ref)

@@ -2,6 +2,29 @@ import pygame
 
 class ImageUtils:
     @staticmethod
+    def fit_image_to_rect(image, target_size, background=(255, 255, 255, 255)):
+        """
+        Resize image to fit within target_size (preserving aspect ratio).
+        Pads with background color.
+        range_size: (width, height)
+        """
+        img_w, img_h = image.get_size()
+        target_w, target_h = target_size
+        
+        scale = min(target_w / img_w, target_h / img_h)
+        new_w, new_h = int(img_w * scale), int(img_h * scale)
+        scaled_img = pygame.transform.smoothscale(image, (new_w, new_h))
+
+        # Center the scaled image on a surface
+        surface = pygame.Surface((target_w, target_h), pygame.SRCALPHA)
+        surface.fill(background)
+        x = (target_w - new_w) // 2
+        y = (target_h - new_h) // 2
+        surface.blit(scaled_img, (x, y))
+
+        return surface
+
+    @staticmethod
     def fit_image_to_square(image, size, background=(255, 255, 255, 255)):
         """
         Resize an image to fit within a square while preserving aspect ratio.
