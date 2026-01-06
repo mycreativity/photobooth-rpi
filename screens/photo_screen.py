@@ -15,11 +15,12 @@ class PhotoScreen(ScreenInterface):
     Shows a white flash, captures a high-res photo, and displays it as a polaroid 
     with a live preview in the background.
     """
-    def __init__(self, renderer, width, height, camera):
+    def __init__(self, renderer, width, height, camera, session_mgr):
         self.renderer = renderer
         self.width = width
         self.height = height
         self.camera_handler = camera
+        self.session_mgr = session_mgr
         self.preview = LivePreview(renderer, width, height)
         
         self.sizing_factor = width / 1280
@@ -201,12 +202,14 @@ class PhotoScreen(ScreenInterface):
         if self.animation_phase == 'done':
             # Add current to list
             if self.polaroid:
-                self.polaroids_list.append(self.polaroid)
+                # Add to Session
+                self.session_mgr.add_polaroid(self.polaroid)
+                # self.polaroids_list.append(self.polaroid) # No longer local
                 self.polaroid = None # Transferred ownership
             
-            if self.photo_index < self.total_photos:
+            if not self.session_mgr.is_complete():
                 # Go to next photo
-                callback('countdown', photo_index=self.photo_index + 1, total_photos=self.total_photos, polaroids=self.polaroids_list, mode=self.mode)
+                callback('countdown')
             else:
                 pass
                 # Finished session stays on screen
@@ -219,10 +222,11 @@ class PhotoScreen(ScreenInterface):
                     composer = LayoutComposer()
                     final_path = composer.compose(
                         self.mode, 
-                        [p.image_path for p in self.polaroids_list]
+                        [p.image_path for p in self.session_mgr.captured_polaroids]
                     )
                     
-                    callback('result', image_path=final_path)
+                    self.session_mgr.final_image_path = final_path
+                    callback('result')
 
     def draw(self, renderer):
         # Background: Live Preview
@@ -230,7 +234,8 @@ class PhotoScreen(ScreenInterface):
             self.preview.draw()
             
         # Previous Polaroids
-        for p in self.polaroids_list:
+        # Previous Polaroids
+        for p in self.session_mgr.captured_polaroids:
             p.draw()
 
         # Current Polaroid
@@ -249,11 +254,11 @@ class PhotoScreen(ScreenInterface):
         self.polaroid = None
         
         # Retrieve Context
-        self.photo_index = context_data.get('photo_index', 1)
-        self.total_photos = context_data.get('total_photos', 3)
-        self.total_photos = context_data.get('total_photos', 3)
-        self.polaroids_list = context_data.get('polaroids', [])
-        self.mode = context_data.get('mode', 'single')
+        # Retrieve Context from Session
+        self.photo_index = self.session_mgr.get_current_index()
+        self.total_photos = self.session_mgr.total_photos
+        # self.polaroids_list is now self.session_mgr.captured_polaroids
+        self.mode = self.session_mgr.layout_id
         self.is_processing = False
         
         self.animation_phase = 'flash'

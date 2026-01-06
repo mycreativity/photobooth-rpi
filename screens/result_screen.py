@@ -12,10 +12,11 @@ class ResultScreen(ScreenInterface):
     Displays the final composed image and offers sharing options.
     """
     
-    def __init__(self, renderer, width, height, camera):
+    def __init__(self, renderer, width, height, camera, session_mgr):
         self.renderer = renderer
         self.width = width
         self.height = height
+        self.session_mgr = session_mgr
         # Camera not used here but kept for signature consistency
         
         self.bg_color = (0, 0, 0, 255)
@@ -97,7 +98,7 @@ class ResultScreen(ScreenInterface):
     def on_enter(self, **context_data):
         logger.info("Entering ResultScreen.")
         
-        self.final_image_path = context_data.get('image_path')
+        self.final_image_path = self.session_mgr.final_image_path
         
         if self.final_image_path:
             # Load and Fit Image

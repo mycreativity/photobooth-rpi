@@ -2,6 +2,7 @@ from PIL import Image, ImageOps
 import os
 import json
 import datetime
+from utils.layout_manager import LayoutManager
 from utils.logger import get_logger
 
 logger = get_logger("LayoutComposer")
@@ -12,18 +13,7 @@ class LayoutComposer:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         
-        self.layouts = {}
-        self.load_layouts()
-
-    def load_layouts(self):
-        """Redundant load, but cleaner to keep independent."""
-        try:
-            with open("layouts.json", "r") as f:
-                data = json.load(f)
-                for l in data.get("layouts", []):
-                     self.layouts[l["id"]] = l
-        except Exception as e:
-            logger.error(f"Failed to load layouts.json in composer: {e}")
+        self.layout_mgr = LayoutManager()
 
     def compose(self, mode, photo_paths):
         """
@@ -41,7 +31,7 @@ class LayoutComposer:
             return None
 
         # Retrieve Layout Config
-        layout_config = self.layouts.get(mode)
+        layout_config = self.layout_mgr.get_layout(mode)
         if not layout_config:
             logger.error(f"Unknown layout mode '{mode}'. fallback to single.")
             # Fallback

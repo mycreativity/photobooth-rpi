@@ -13,6 +13,8 @@ from screens.result_screen import ResultScreen
 from ui.image import Image
 from utils.logger import get_logger
 from utils.settings_manager import SettingsManager
+from utils.layout_manager import LayoutManager
+from utils.session_manager import SessionManager
 
 logger = get_logger("Main")
 
@@ -27,6 +29,8 @@ FPS = 60
 camera = None
 manager = None
 settings_manager = None
+layout_manager = None
+session_manager = None
 window = None
 renderer = None
 screen_width = 1280
@@ -80,18 +84,18 @@ def parse_resolution(res_str):
     except:
         return 1280, 800, False
 
-def init_screens(renderer, width, height, camera, settings_mgr, cb):
+def init_screens(renderer, width, height, camera, settings_mgr, layout_mgr, session_mgr, cb):
     """Initializes and registers all screens."""
     
     mgr = ScreenManager()
     
     main_screen = MainScreen(renderer, width, height, camera)
-    layout_selection_screen = LayoutSelectionScreen(renderer, width, height, camera)
-    countdown_screen = CountdownScreen(renderer, width, height, camera)
+    layout_selection_screen = LayoutSelectionScreen(renderer, width, height, camera, layout_mgr, session_mgr)
+    countdown_screen = CountdownScreen(renderer, width, height, camera, session_mgr)
     settings_screen = SettingsScreen(renderer, width, height, settings_mgr, cb)
     
-    photo_screen = PhotoScreen(renderer, width, height, camera)
-    result_screen = ResultScreen(renderer, width, height, camera)
+    photo_screen = PhotoScreen(renderer, width, height, camera, session_mgr)
+    result_screen = ResultScreen(renderer, width, height, camera, session_mgr)
     
     mgr.add_screen('main', main_screen)
     mgr.add_screen('layout_selection', layout_selection_screen)
@@ -105,7 +109,7 @@ def init_screens(renderer, width, height, camera, settings_mgr, cb):
 
 def apply_settings_callback():
     """Called when settings are saved. Re-initializes components."""
-    global camera, manager, renderer, screen_width, screen_height, settings_manager, window, current_is_fullscreen
+    global camera, manager, renderer, screen_width, screen_height, settings_manager, layout_manager, session_manager, window, current_is_fullscreen
     
     logger.info("Applying new settings...")
     
@@ -147,18 +151,20 @@ def apply_settings_callback():
     # 3. Re-init Screens (Layout depends on W/H)
     logger.info("Recreating screen layouts...")
     try:
-        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, apply_settings_callback)
+        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, layout_manager, session_manager, apply_settings_callback)
     except Exception as e:
         logger.error(f"Failed to re-init screens: {e}")
 
 def main():
-    global camera, manager, settings_manager, renderer, screen_width, screen_height, window, current_is_fullscreen
+    global camera, manager, settings_manager, layout_manager, session_manager, renderer, screen_width, screen_height, window, current_is_fullscreen
 
     # 1. Initialize Pygame
     pygame.init()
 
     # 4. Initialize Settings (Early load to get resolution)
     settings_manager = SettingsManager("settings.json")
+    layout_manager = LayoutManager("layouts.json")
+    session_manager = SessionManager()
     
     # Detect / Load Resolution
     res_str = settings_manager.get("screen_size", "1280x800")
@@ -223,7 +229,7 @@ def main():
 
     # 6. Initialize Screens & Manager
     try:
-        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, apply_settings_callback)
+        manager = init_screens(renderer, screen_width, screen_height, camera, settings_manager, layout_manager, session_manager, apply_settings_callback)
         
     except Exception as e:
         logger.fatal(f"Error initializing screens: {e}", exc_info=True)

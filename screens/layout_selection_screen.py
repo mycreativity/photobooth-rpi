@@ -16,11 +16,13 @@ class LayoutSelectionScreen(ScreenInterface):
     Screen for selecting the photo layout, loaded from layouts.json.
     """
     
-    def __init__(self, renderer, width, height, camera):
+    def __init__(self, renderer, width, height, camera, layout_mgr, session_mgr):
         self.renderer = renderer
         self.width = width
         self.height = height
         self.camera = camera
+        self.layout_mgr = layout_mgr
+        self.session_mgr = session_mgr
         self.sizing_factor = width / 1280 
         
         # --- LIVE PREVIEW ---
@@ -58,14 +60,8 @@ class LayoutSelectionScreen(ScreenInterface):
         self.load_layouts()
 
     def load_layouts(self):
-        """Reads layouts.json and creates UI elements."""
-        try:
-            with open("layouts.json", "r") as f:
-                data = json.load(f)
-                layouts_data = data.get("layouts", [])
-        except Exception as e:
-            logger.error(f"Failed to load layouts.json: {e}")
-            layouts_data = []
+        """Reads layouts from LayoutManager and creates UI elements."""
+        layouts_data = self.layout_mgr.get_layouts()
 
         num_layouts = len(layouts_data)
         if num_layouts == 0:
@@ -74,12 +70,8 @@ class LayoutSelectionScreen(ScreenInterface):
         # Base Geometry
         base_w = 420
         base_h = 280
-        spacer = 50 # Reduced spacer default
+        spacer = 50 
         
-        # Calculate fit
-        # Total needed = (N * w) + ((N-1) * spacer)
-        
-        # Available width (with margin)
         safe_area_w = self.width * 0.9
         
         # 1. Try with default size
@@ -87,13 +79,7 @@ class LayoutSelectionScreen(ScreenInterface):
         
         scale = 1.0
         if total_w > safe_area_w:
-            # Need to scale down
-            # w_total = N*w + (N-1)*spacer
-            # We scale both w and spacer, or just w?
-            # Let's scale everything uniformly
             scale = safe_area_w / total_width_raw if (total_width_raw := total_w) > 0 else 1.0
-            
-            # Recalculate with scale
             total_w = safe_area_w
 
         # Apply sizes
@@ -121,14 +107,6 @@ class LayoutSelectionScreen(ScreenInterface):
             # Create Preview Widget
             preview_data = layout.get("preview", {})
             frames = []
-            
-            # We need to scale the internal frames of the preview too!
-            # PhotoLayoutPreview doesn't support auto-scaling its content logic yet unless we resize it?
-            # Actually PhotoLayoutPreview takes a list of PhotoFrames with absolute positions/sizes.
-            # We must scale those inputs.
-            
-            # Preview data is based on 420x280 reference.
-            # We multiply all x, y, w, h by `scale`.
             
             for fdata in preview_data.get("frames", []):
                 fx = int(fdata.get("x") * scale)
@@ -165,7 +143,6 @@ class LayoutSelectionScreen(ScreenInterface):
 
     def _update_ui_state(self):
         """Updates selections."""
-        
         for opt in self.layout_options:
             is_selected = (opt['id'] == self.selected_layout_id)
             
@@ -208,12 +185,14 @@ class LayoutSelectionScreen(ScreenInterface):
                 layout_data = selected_opt['data']
                 logger.info(f"Confirmed layout: {layout_data['name']}")
                 
-                # We pass the ID as 'mode'
-                switch_screen_callback(
-                    'countdown', 
-                    mode=self.selected_layout_id, 
+                # Start Session
+                self.session_mgr.start_session(
+                    layout_id=self.selected_layout_id,
                     total_photos=layout_data.get("photo_count", 1)
                 )
+                
+                # Switch Screen
+                switch_screen_callback('countdown')
 
     def update(self, dt, callback):
         # Update Live Preview

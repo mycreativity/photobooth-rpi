@@ -15,13 +15,14 @@ logger = get_logger("CountdownScreen")
 
 class CountdownScreen(ScreenInterface):
     
-    def __init__(self, renderer, width, height, camera):
+    def __init__(self, renderer, width, height, camera, session_mgr):
         self.renderer = renderer
         self.width = width
         self.height = height
         self.camera_handler = camera
+        self.session_mgr = session_mgr
         self.preview = LivePreview(renderer, width, height)
-        self.polaroids_list = [] # From previous shots
+        # self.polaroids_list = [] # Now in session, but we might want local ref for drawing
         self.photo_index = 1
         
         # Sizing factor calculation
@@ -110,7 +111,7 @@ class CountdownScreen(ScreenInterface):
         else:
             # Animation finished, move to capturing phase
             # Pass persistence data
-            callback('photo', photo_index=self.photo_index, total_photos=self.total_photos, polaroids=self.polaroids_list, mode=self.mode)
+            callback('photo')
 
     def draw(self, renderer):
         # Clear back buffer
@@ -127,7 +128,8 @@ class CountdownScreen(ScreenInterface):
                 img.draw()
                 
         # Draw previous polaroids (at bottom)
-        for p in self.polaroids_list:
+        # Draw previous polaroids (at bottom)
+        for p in self.session_mgr.captured_polaroids:
             p.draw()
         
     def on_enter(self, **context_data):
@@ -143,10 +145,9 @@ class CountdownScreen(ScreenInterface):
         self.current_number = None
         
         # Context Data
-        self.photo_index = context_data.get('photo_index', 1)
-        self.total_photos = context_data.get('total_photos', 3)
-        self.polaroids_list = context_data.get('polaroids', [])
-        self.mode = context_data.get('mode', 'single')
+        # Context Data
+        self.photo_index = self.session_mgr.get_current_index()
+        self.total_photos = self.session_mgr.total_photos
         
         # Dynamic Text Update
         if self.photo_index == 1:
