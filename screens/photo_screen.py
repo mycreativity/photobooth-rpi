@@ -6,6 +6,7 @@ from utils.logger import get_logger
 from ui.image import Image
 from ui.live_preview import LivePreview
 from ui.polaroid import Polaroid
+from utils.layout_composer import LayoutComposer
 
 logger = get_logger("PhotoScreen")
 
@@ -205,10 +206,23 @@ class PhotoScreen(ScreenInterface):
             
             if self.photo_index < self.total_photos:
                 # Go to next photo
-                callback('countdown', photo_index=self.photo_index + 1, total_photos=self.total_photos, polaroids=self.polaroids_list)
+                callback('countdown', photo_index=self.photo_index + 1, total_photos=self.total_photos, polaroids=self.polaroids_list, mode=self.mode)
             else:
                 pass
                 # Finished session stays on screen
+                # --> PROCESS AND GO TO RESULT
+                if not self.is_processing:
+                    self.is_processing = True
+                    logger.info("Session complete. Composing layout...")
+                    
+                    # Offload to composer
+                    composer = LayoutComposer()
+                    final_path = composer.compose(
+                        self.mode, 
+                        [p.image_path for p in self.polaroids_list]
+                    )
+                    
+                    callback('result', image_path=final_path)
 
     def draw(self, renderer):
         # Background: Live Preview
@@ -237,7 +251,10 @@ class PhotoScreen(ScreenInterface):
         # Retrieve Context
         self.photo_index = context_data.get('photo_index', 1)
         self.total_photos = context_data.get('total_photos', 3)
+        self.total_photos = context_data.get('total_photos', 3)
         self.polaroids_list = context_data.get('polaroids', [])
+        self.mode = context_data.get('mode', 'single')
+        self.is_processing = False
         
         self.animation_phase = 'flash'
         

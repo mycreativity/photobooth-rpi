@@ -110,7 +110,7 @@ class CountdownScreen(ScreenInterface):
         else:
             # Animation finished, move to capturing phase
             # Pass persistence data
-            callback('photo', photo_index=self.photo_index, total_photos=self.total_photos, polaroids=self.polaroids_list)
+            callback('photo', photo_index=self.photo_index, total_photos=self.total_photos, polaroids=self.polaroids_list, mode=self.mode)
 
     def draw(self, renderer):
         # Clear back buffer
@@ -121,9 +121,6 @@ class CountdownScreen(ScreenInterface):
         if self.preview.texture:
             self.preview.draw()
 
-
-
-        # Draw images only if visible
         # Draw images only if visible
         for img in self.countdown_images.values():
             if img.alpha > 0:
@@ -149,6 +146,7 @@ class CountdownScreen(ScreenInterface):
         self.photo_index = context_data.get('photo_index', 1)
         self.total_photos = context_data.get('total_photos', 3)
         self.polaroids_list = context_data.get('polaroids', [])
+        self.mode = context_data.get('mode', 'single')
         
         # Dynamic Text Update
         if self.photo_index == 1:

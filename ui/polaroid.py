@@ -9,6 +9,7 @@ class Polaroid:
 
     def __init__(self, renderer, photo_path, size=448):
         self.renderer = renderer
+        self.image_path = photo_path # Store for later use (e.g. composition)
         self.rotation_angle = 0.0 
         self.position = (0, 0)
         

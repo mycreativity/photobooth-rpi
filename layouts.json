@@ -1,0 +1,106 @@
+{
+    "layouts": [
+        {
+            "id": "single",
+            "name": "SINGLE PHOTO",
+            "preview_image": "assets/images/photo_mock_1.png",
+            "photo_count": 1,
+            "canvas_width": 1800,
+            "canvas_height": 1200,
+            "slots": [
+                {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1800,
+                    "height": 1200
+                }
+            ],
+            "preview": {
+                "width": 420,
+                "height": 280,
+                "frames": [
+                    {
+                        "x": 10,
+                        "y": 10,
+                        "width": 400,
+                        "height": 260,
+                        "text": "1",
+                        "image_path": "assets/images/photo_mock_1.png"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "collage",
+            "name": "4 PHOTO COLLAGE",
+            "preview_image": "assets/images/photo_mock_collage.png",
+            "photo_count": 4,
+            "canvas_width": 1800,
+            "canvas_height": 1200,
+            "slots": [
+                {
+                    "x": 42,
+                    "y": 42,
+                    "width": 1114,
+                    "height": 1114
+                },
+                {
+                    "x": 1200,
+                    "y": 42,
+                    "width": 557,
+                    "height": 342
+                },
+                {
+                    "x": 1200,
+                    "y": 428,
+                    "width": 557,
+                    "height": 342
+                },
+                {
+                    "x": 1200,
+                    "y": 814,
+                    "width": 557,
+                    "height": 342
+                }
+            ],
+            "preview": {
+                "width": 420,
+                "height": 280,
+                "frames": [
+                    {
+                        "x": 10,
+                        "y": 10,
+                        "width": 260,
+                        "height": 260,
+                        "text": "1",
+                        "image_path": "assets/images/photo_mock_1.png"
+                    },
+                    {
+                        "x": 280,
+                        "y": 10,
+                        "width": 130,
+                        "height": 80,
+                        "text": "2",
+                        "image_path": "assets/images/photo_mock_2.png"
+                    },
+                    {
+                        "x": 280,
+                        "y": 100,
+                        "width": 130,
+                        "height": 80,
+                        "text": "3",
+                        "image_path": "assets/images/photo_mock_3.png"
+                    },
+                    {
+                        "x": 280,
+                        "y": 190,
+                        "width": 130,
+                        "height": 80,
+                        "text": "4",
+                        "image_path": "assets/images/photo_mock_4.png"
+                    }
+                ]
+            }
+        }
+    ]
+}
