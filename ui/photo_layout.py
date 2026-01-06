@@ -22,7 +22,7 @@ class PhotoFrame:
         self.rect = pygame.Rect(position[0], position[1], 1, 1)
         self.position = position    
         self.text = text
-        self.font = FONT_DISPLAY_SMALL
+        self.font = FONT_DISPLAY_MEDIUM
         self.color = font_color
         self.bg_color = bg_color
         self.image_path = image_path

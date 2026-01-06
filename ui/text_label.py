@@ -18,6 +18,10 @@ class TextLabel:
         self.rect = None
         
         self.update_text(text)
+        
+        # Animation properties
+        self.alpha = 255
+        self.scale = 1.0
 
     def update_text(self, text):
         """Creates new surface and texture from text."""
@@ -30,6 +34,8 @@ class TextLabel:
                 if self.texture:
                     del self.texture 
                 self.texture = Texture.from_surface(self.renderer, self.surface)
+                # Enable alpha blending
+                self.texture.blend_mode = 1
                 
         except pygame.error as e:
             logger.error(f"Error rendering text: {e}")
@@ -41,7 +47,18 @@ class TextLabel:
 
     def draw(self):
         if self.texture and self.rect:
-            self.texture.draw(dstrect=self.rect)
+            # Update texture alpha
+            self.texture.alpha = int(max(0, min(255, self.alpha)))
+            
+            if self.scale == 1.0:
+                self.texture.draw(dstrect=self.rect)
+            else:
+                # Calculate scaled rect centered at original position center
+                w = int(self.rect.width * self.scale)
+                h = int(self.rect.height * self.scale)
+                cx, cy = self.rect.center
+                scaled_rect = pygame.Rect(cx - w//2, cy - h//2, w, h)
+                self.texture.draw(dstrect=scaled_rect)
 
     def cleanup(self):
         if self.texture:

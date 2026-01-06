@@ -6,8 +6,9 @@ from PIL import Image
 from cameras.gphoto2_eos_camera_handler import GPhoto2EOSCameraHandler
 from screens.screen_interface import ScreenInterface 
 from utils.logger import get_logger
-from ui.image import Image
+from ui.text_label import TextLabel
 from ui.live_preview import LivePreview
+from config import FONT_DISPLAY, WHITE_COLOR
 
 logger = get_logger("CountdownScreen")
 
@@ -26,30 +27,28 @@ class CountdownScreen(ScreenInterface):
         # Sizing factor calculation
         self.sizing_factor = width / 1280
         
-        # Load Overlay
-        self.overlay = Image(renderer, "assets/images/preview-border.png")
-        margin = int(10 * self.sizing_factor)
-        overlay_width = self.width - (2 * margin)
-        overlay_height = self.height - (2 * margin)
-        self.overlay.resize(overlay_width, overlay_height)
-        self.overlay.set_position((margin, margin))
         
-        # Countdown Images
-        # We quote 'ready' to fix the NameError.
+        # Countdown Labels
         self.countdown_images = {
-            'ready': Image(renderer, "assets/images/countdown_text_ready.png"),
-            'text_3': Image(renderer, "assets/images/countdown_text_3.png"),
-            'text_2': Image(renderer, "assets/images/countdown_text_2.png"),
-            'text_1': Image(renderer, "assets/images/countdown_text_1.png"),
-            'smile': Image(renderer, "assets/images/countdown_text_smile.png")
+            'ready': TextLabel(renderer, "GET READY!", FONT_DISPLAY, WHITE_COLOR),
+            'text_3': TextLabel(renderer, "3", FONT_DISPLAY, WHITE_COLOR),
+            'text_2': TextLabel(renderer, "2", FONT_DISPLAY, WHITE_COLOR),
+            'text_1': TextLabel(renderer, "1", FONT_DISPLAY, WHITE_COLOR),
+            'smile': TextLabel(renderer, "SMILE!", FONT_DISPLAY, WHITE_COLOR)
         }
         
-        # Resize and position all elements
-        for img in self.countdown_images.values():
-            new_w = int(img.image_rect.width * self.sizing_factor)
-            new_h = int(img.image_rect.height * self.sizing_factor)
-            img.resize(new_w, new_h)
+        # Position all elements (Center them)
+        for key, img in self.countdown_images.items():
+            # For text, we don't resize images, we just center using current rect
+            # If sizing factor is drastically different, we might want to scale, 
+            # but FONT_DISPLAY (100px) is standard.
+            
+            # Center
+            new_w = img.rect.width
+            new_h = img.rect.height
             img.set_position(((self.width - new_w) // 2, (self.height - new_h) // 2))
+            
+            # Init state
             img.alpha = 0
             img.scale = 1.0
 
@@ -111,7 +110,7 @@ class CountdownScreen(ScreenInterface):
         else:
             # Animation finished, move to capturing phase
             # Pass persistence data
-            callback('photo', photo_index=self.photo_index, polaroids=self.polaroids_list)
+            callback('photo', photo_index=self.photo_index, total_photos=self.total_photos, polaroids=self.polaroids_list)
 
     def draw(self, renderer):
         # Clear back buffer
@@ -122,8 +121,7 @@ class CountdownScreen(ScreenInterface):
         if self.preview.texture:
             self.preview.draw()
 
-        # Overlay
-        self.overlay.draw()
+
 
         # Draw images only if visible
         # Draw images only if visible
@@ -149,7 +147,20 @@ class CountdownScreen(ScreenInterface):
         
         # Context Data
         self.photo_index = context_data.get('photo_index', 1)
+        self.total_photos = context_data.get('total_photos', 3)
         self.polaroids_list = context_data.get('polaroids', [])
+        
+        # Dynamic Text Update
+        if self.photo_index == 1:
+            self.countdown_images['ready'].update_text("GET READY!")
+        elif self.photo_index == self.total_photos:
+            self.countdown_images['ready'].update_text("LAST ONE!")
+        else:
+            self.countdown_images['ready'].update_text(f"PHOTO {self.photo_index} OF {self.total_photos}")
+            
+        # Re-center 'ready' label as text length changed
+        r_lbl = self.countdown_images['ready']
+        r_lbl.set_position(((self.width - r_lbl.rect.width) // 2, (self.height - r_lbl.rect.height) // 2))
         
     def on_exit(self):
         logger.info("Exiting CountdownScreen.")

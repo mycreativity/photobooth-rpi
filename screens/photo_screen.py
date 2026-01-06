@@ -120,32 +120,48 @@ class PhotoScreen(ScreenInterface):
             if self.polaroid:
                 self.polaroid_start_pos = self.polaroid.position
                 
-                # Layout logic for 3 polaroids
-                # Final Size approx 300px wide. Original is ~840 wide (at scale=1.0)
-                # target_scale = 300 / 840 ~= 0.36. Let's use 0.4 for simplicity.
-                self.polaroid_target_scale = 0.4
+                # Layout logic: generic for N polaroids
+                # We want them to fit in width with some padding.
+                # Maximum width for row = screen_width * 0.9
+                # Individual Width = scaled_w.
+                # total_w = (N * scaled_w) + ((N-1) * gap)
                 
-                # Approximate dimensions of FINAL scaled polaroid
-                final_w = int(self.polaroid.frame.image_rect.width * self.polaroid_target_scale)
-                final_h = int(self.polaroid.frame.image_rect.height * self.polaroid_target_scale)
+                # Base scale guess
+                base_scale = 0.4 
+                if self.total_photos == 1:
+                    base_scale = 0.6 # Larger for single photo
+                
+                # Calculate if it fits
+                p_rect_w = self.polaroid.frame.image_rect.width
+                final_w = int(p_rect_w * base_scale)
                 gap = 20
                 
-                total_group_width = (3 * final_w) + (2 * gap)
+                total_group_width = (self.total_photos * final_w) + ((self.total_photos - 1) * gap)
+                max_width = self.width * 0.95
+                
+                if total_group_width > max_width:
+                    # Scale down to fit
+                    # max_width = (N * w) + (N-1)*gap
+                    # max_width - (N-1)*gap = N * w
+                    # w = (max_width - (N-1)*gap) / N
+                    available_w = max_width - ((self.total_photos - 1) * gap)
+                    final_w = int(available_w / self.total_photos)
+                    # Recalculate scale
+                    base_scale = final_w / p_rect_w
+                    total_group_width = (self.total_photos * final_w) + ((self.total_photos - 1) * gap)
+
+                self.polaroid_target_scale = base_scale
+                final_h = int(self.polaroid.frame.image_rect.height * base_scale)
+                
                 start_x = (self.width - total_group_width) // 2
                 
-                # Calculate Target X based on current photo index (1, 2, 3)
-                # indices are 1-based. (i-1) -> 0, 1, 2
+                # Calculate Target X based on current photo index (1, 2, 3...)
                 target_x = start_x + (self.photo_index - 1) * (final_w + gap)
                 
                 # Target Y: Bottom center. Bottom aligned.
-                # height - margin - final_h
-                target_y = self.height - final_h
+                target_y = self.height - final_h - 20
                 
                 self.polaroid_target_pos = (target_x, target_y)
-                
-                # Random rotation -5 to 5
-                import random
-                # self.polaroid_target_rot = random.uniform(-5.0, 5.0)
                 self.polaroid_target_rot = 0
 
         # Process Fall Animation
@@ -154,8 +170,6 @@ class PhotoScreen(ScreenInterface):
             duration = 1.0 # 1 second fall
             t = min(1.0, self.anim_timer / duration)
             
-            # Simple ease-in-out for fall? Or just ease-in.
-            
             start_x, start_y = self.polaroid_start_pos
             target_x, target_y = self.polaroid_target_pos
             
@@ -163,7 +177,6 @@ class PhotoScreen(ScreenInterface):
             curr_x = start_x + (target_x - start_x) * t
             
             # Y Movement (Parabolic)
-            # y(t) = start_y + (target_y - start_y)*t*t - (UpToss * sin)
             import math
             curr_y = start_y + (target_y - start_y) * (t*t) - (200 * self.sizing_factor * math.sin(t * math.pi))
             
@@ -175,7 +188,7 @@ class PhotoScreen(ScreenInterface):
                 curr_rot = start_rot + (self.polaroid_target_rot - start_rot) * t
                 self.polaroid.set_rotation(curr_rot)
                 
-                # Scale (Linear from 1.0 to 0.4)
+                # Scale
                 start_scale = 1.0
                 curr_scale = start_scale + (self.polaroid_target_scale - start_scale) * t
                 self.polaroid.set_scale(curr_scale)
@@ -190,17 +203,12 @@ class PhotoScreen(ScreenInterface):
                 self.polaroids_list.append(self.polaroid)
                 self.polaroid = None # Transferred ownership
             
-            if self.photo_index < 3:
+            if self.photo_index < self.total_photos:
                 # Go to next photo
-                callback('countdown', photo_index=self.photo_index + 1, polaroids=self.polaroids_list)
+                callback('countdown', photo_index=self.photo_index + 1, total_photos=self.total_photos, polaroids=self.polaroids_list)
             else:
-                # Finished session
-                # Wait a bit? Or show 'done' screen. 
-                # User asked: "eventually 3 polaroids... so let the first photo 'fall'..."
-                # If we go to main, they disappear. Maybe stay here for 5s then main.
-                # Finished session
-                # Stay on screen indefinitely. User clicks to exit (handled in handle_event).
                 pass
+                # Finished session stays on screen
 
     def draw(self, renderer):
         # Background: Live Preview
@@ -228,6 +236,7 @@ class PhotoScreen(ScreenInterface):
         
         # Retrieve Context
         self.photo_index = context_data.get('photo_index', 1)
+        self.total_photos = context_data.get('total_photos', 3)
         self.polaroids_list = context_data.get('polaroids', [])
         
         self.animation_phase = 'flash'

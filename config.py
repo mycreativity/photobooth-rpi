@@ -6,7 +6,8 @@ PHOTO_FOLDER = "photos"
 FPS = 60
 
 FONT_DISPLAY = FontUtils.load_font('assets/fonts/Pacifico-ExtraBold.ttf', 100)
-FONT_DISPLAY_SMALL = FontUtils.load_font('assets/fonts/Pacifico-ExtraBold.ttf', 70)
+FONT_DISPLAY_MEDIUM = FontUtils.load_font('assets/fonts/Pacifico-ExtraBold.ttf', 70)
+FONT_DISPLAY_SMALL = FontUtils.load_font('assets/fonts/Pacifico-ExtraBold.ttf', 50)
 # LabelBase.register(name='HEADING', fn_regular='assets/fonts/Pacifico-Regular.ttf')
 # LabelBase.register(name='TEXT', fn_regular='assets/fonts/Poppins-Regular.ttf')
 # LabelBase.register(name='BUTTON', fn_regular='assets/fonts/Poppins-ExtraBold.ttf')

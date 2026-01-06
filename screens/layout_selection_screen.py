@@ -35,8 +35,8 @@ class LayoutSelectionScreen(ScreenInterface):
         self.selected_layout = None # 'single' or 'collage'
 
         # --- LABELS ---
-        self.lbl_option1 = TextLabel(renderer, "Single Photo", FONT_DISPLAY_SMALL, color=WHITE_COLOR)
-        self.lbl_option2 = TextLabel(renderer, "4 Photo Collage", FONT_DISPLAY_SMALL, color=WHITE_COLOR)
+        self.lbl_option1 = TextLabel(renderer, "SINGLE PHOTO", FONT_DISPLAY_SMALL, color=WHITE_COLOR)
+        self.lbl_option2 = TextLabel(renderer, "4 PHOTO COLLAGE", FONT_DISPLAY_SMALL, color=WHITE_COLOR)
 
         # --- BUTTON: NEXT ---
         self.btn_next = Button(
@@ -53,7 +53,7 @@ class LayoutSelectionScreen(ScreenInterface):
         )
         
         start_x = (self.width - self.btn_next.rect.width) // 2
-        start_y = int(self.height * 0.75) + 80 # Move down a bit to clear options
+        start_y = int(self.height - self.btn_next.rect.height - 20) # Move down a bit to clear options
         
         self.btn_next.set_position((start_x, start_y))
 
